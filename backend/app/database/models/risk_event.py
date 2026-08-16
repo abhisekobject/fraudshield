@@ -105,6 +105,27 @@ class RiskEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         comment="When the risk evaluation was completed (UTC)",
     )
 
+    # --- Case Management (Phase H) -----------------------------------------
+    case_status: Mapped[str] = mapped_column(
+        String(64),
+        nullable=False,
+        default="NEW",
+        server_default="NEW",
+        comment="Case lifecycle: NEW, INVESTIGATING, ESCALATED, CONFIRMED_FRAUD, FALSE_POSITIVE, RESOLVED",
+    )
+
+    assigned_to: Mapped[str | None] = mapped_column(
+        String(128),
+        nullable=True,
+        comment="Analyst identifier this case is assigned to",
+    )
+
+    case_notes: Mapped[str | None] = mapped_column(
+        String(4096),
+        nullable=True,
+        comment="Analyst investigation notes",
+    )
+
     # --- Relationships ------------------------------------------------------
     transaction: Mapped["Transaction"] = relationship(
         "Transaction",

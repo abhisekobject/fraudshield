@@ -87,29 +87,30 @@ class DeterministicPatternAnalyzer:
                 for match in regex.finditer(transcript):
                     phrase = match.group(0)
 
-                    # ── Sentence-level negation check ──────────────────────────────
-                    # Get the full sentence containing this match, then check
-                    # if it contains a negation token anywhere in that sentence.
-                    # This is far more reliable than a fixed 35-char window,
-                    # especially for sentences like:
-                    #   "We will never ask you for your PIN, OTP, or password"
-                    # where "never" is 20+ chars before "password".
-                    containing_sentence = _get_containing_sentence(
-                        transcript, match.start(), match.end()
-                    )
+                    # ── Proximity negation check ───────────────────────────────────────
+                    # Check a 40-char window BEFORE the match for negation tokens.
+                    # This avoids false suppression where "Do not disconnect the call
+                    # and tell me the verification code" would wrongly suppress
+                    # the "verification code" match because "Do not" appeared
+                    # earlier in the same sentence.
+                    window_start = max(0, match.start() - 40)
+                    pre_match_window = transcript[window_start:match.start()]
 
-                    if re.search(NEGATION_TOKENS, containing_sentence, re.IGNORECASE):
+                    if re.search(NEGATION_TOKENS, pre_match_window, re.IGNORECASE):
                         logger.debug(
                             f"NLP: Skipped negated match '{phrase}' "
-                            f"in sentence: '{containing_sentence[:80]}...'"
+                            f"(negation found in preceding 40 chars)"
                         )
                         continue
 
                     # ── Exception context check ────────────────────────────────────
-                    # If the sentence has a known safe/educational context pattern
-                    # (e.g. "we will never ask you for your OTP"), suppress the
-                    # indicator — this prevents educational statements from being
+                    # If the containing sentence has a known safe/educational context
+                    # pattern (e.g. "we will never ask you for your OTP"), suppress
+                    # the indicator to prevent educational statements from being
                     # flagged as social engineering signals.
+                    containing_sentence = _get_containing_sentence(
+                        transcript, match.start(), match.end()
+                    )
                     if any(exc.search(containing_sentence) for exc in EXCEPTION_CONTEXT_PATTERNS):
                         logger.debug(
                             f"NLP: Skipped exception-context match '{phrase}' "

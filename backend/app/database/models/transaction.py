@@ -64,6 +64,7 @@ if TYPE_CHECKING:
     from app.database.models.device import Device
     from app.database.models.recipient import Recipient
     from app.database.models.risk_event import RiskEvent
+    from app.database.models.transaction_event import TransactionEvent
 
 
 class Transaction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
@@ -179,6 +180,13 @@ class Transaction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         # Risk events are meaningful only in the context of their transaction.
         # When a transaction is deleted (uncommon — only via explicit admin
         # action), its risk events are also removed.
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+    timeline_events: Mapped[List["TransactionEvent"]] = relationship(
+        "TransactionEvent",
+        back_populates="transaction",
         cascade="all, delete-orphan",
         lazy="select",
     )

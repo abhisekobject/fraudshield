@@ -11,7 +11,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
-from app.database.models import RiskEvent, RiskReason, Transaction
+from app.database.models import RiskEvent, RiskReason, Transaction, TransactionEvent, PrivacyAuditEvent
 from app.database.models.enums import TransactionStatus
 from app.risk.types import TransactionContext, RiskEvaluation
 from app.risk.analyzers.transaction_analyzer import TransactionAnalyzer
@@ -63,6 +63,20 @@ class RiskOrchestrator:
     def evaluate(self, db: Session, transaction: Transaction, interaction_context: Optional[InteractionContext] = None) -> RiskEvaluation:
         """Runs the full risk evaluation pipeline for a transaction."""
         logger.info(f"Risk evaluation started — tx={transaction.id}")
+        
+        now = datetime.now(timezone.utc)
+        timeline_events = []
+        privacy_events = []
+
+        timeline_events.append(TransactionEvent(
+            id=uuid.uuid4(),
+            transaction_id=transaction.id,
+            event_type="PAYMENT_INITIATED",
+            engine="API",
+            status="COMPLETED",
+            explanation=f"Payment of {transaction.amount} {transaction.currency} initiated.",
+            occurred_at=now
+        ))
 
         context = TransactionContext(
             transaction_id=transaction.id,
@@ -83,6 +97,16 @@ class RiskOrchestrator:
                 logger.warning(f"Analyzer {analyzer.__class__.__name__} failed: {e}")
                 
         features = {f.name: f for f in features_list}
+        
+        timeline_events.append(TransactionEvent(
+            id=uuid.uuid4(),
+            transaction_id=transaction.id,
+            event_type="FEATURE_EXTRACTION",
+            engine="ANALYZERS",
+            status="COMPLETED",
+            explanation=f"Extracted {len(features)} risk features.",
+            occurred_at=datetime.now(timezone.utc)
+        ))
 
         # 2. Rule Evaluation
         rule_eval = self.rule_engine.evaluate(features)
@@ -92,7 +116,36 @@ class RiskOrchestrator:
 
         # 4. Social Engineering Analysis (Optional Phase 5)
         if interaction_context:
+            # Privacy Audit Event
+            privacy_events.append(PrivacyAuditEvent(
+                id=uuid.uuid4(),
+                transaction_id=transaction.id,
+                event_type="TRANSCRIPT_RECEIVED",
+                detail="Voice interaction transcript received for analysis.",
+                occurred_at=datetime.now(timezone.utc)
+            ))
+            
             social_eval = self.nlp_analyzer.analyze(interaction_context)
+            
+            timeline_events.append(TransactionEvent(
+                id=uuid.uuid4(),
+                transaction_id=transaction.id,
+                event_type="NLP_ANALYSIS_EXECUTED",
+                engine="NLP",
+                status="COMPLETED",
+                explanation=f"NLP engine returned score {social_eval.score:.2f}",
+                risk_contribution=social_eval.score,
+                occurred_at=datetime.now(timezone.utc)
+            ))
+            
+            if social_eval.triggered_indicators:
+                privacy_events.append(PrivacyAuditEvent(
+                    id=uuid.uuid4(),
+                    transaction_id=transaction.id,
+                    event_type="NLP_ANALYSIS_COMPLETED",
+                    detail=f"Detected {len(social_eval.triggered_indicators)} potential social engineering indicators.",
+                    occurred_at=datetime.now(timezone.utc)
+                ))
         else:
             # Fallback if no context provided
             from app.nlp.types import SocialEngineeringEvaluation
@@ -122,7 +175,10 @@ class RiskOrchestrator:
                 reason_code=ind.code,
                 severity=ind.severity,
                 explanation=ind.explanation,
-                signal_value=None
+                signal_value=None,
+                source_engine="NLP",
+                contribution=social_eval.score,
+                evidence=f"Matched phrase: '{ind.matched_phrase}'"
             ))
 
         # 6. Compile Final Evaluation
@@ -141,8 +197,19 @@ class RiskOrchestrator:
             model_version=model_version if ml_available else None
         )
 
+        timeline_events.append(TransactionEvent(
+            id=uuid.uuid4(),
+            transaction_id=transaction.id,
+            event_type="RISK_FUSION_COMPLETED",
+            engine="FUSION",
+            status="COMPLETED",
+            explanation=f"Fusion finalized risk level as {final_level.value}",
+            risk_contribution=final_score,
+            occurred_at=datetime.now(timezone.utc)
+        ))
+
         # 7. Persistence
-        self._persist_evaluation(db, transaction.id, evaluation)
+        self._persist_evaluation(db, transaction.id, evaluation, timeline_events, privacy_events)
 
         logger.info(
             f"Risk result — tx={transaction.id} score={final_score:.2f} "
@@ -152,8 +219,8 @@ class RiskOrchestrator:
 
         return evaluation
 
-    def _persist_evaluation(self, db: Session, transaction_id: uuid.UUID, evaluation: RiskEvaluation) -> None:
-        """Saves the RiskEvent and associated RiskReasons to the database."""
+    def _persist_evaluation(self, db: Session, transaction_id: uuid.UUID, evaluation: RiskEvaluation, timeline_events: list, privacy_events: list) -> None:
+        """Saves the RiskEvent, RiskReasons, and Timeline to the database."""
         
         risk_event = RiskEvent(
             id=uuid.uuid4(),
@@ -178,8 +245,17 @@ class RiskOrchestrator:
                 reason_code=rule.reason_code,
                 severity=rule.severity,
                 message=rule.explanation,
-                signal_value=rule.signal_value
+                signal_value=rule.signal_value,
+                source_engine=rule.source_engine,
+                contribution=rule.contribution,
+                evidence=rule.evidence
             )
             db.add(reason)
+            
+        for event in timeline_events:
+            db.add(event)
+            
+        for event in privacy_events:
+            db.add(event)
             
         db.commit()

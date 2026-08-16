@@ -76,6 +76,9 @@ export interface TriggeredRule {
   severity: ReasonSeverity;
   explanation: string;
   signal_value?: string;
+  source_engine?: string;
+  contribution?: number;
+  evidence?: string;
 }
 
 export interface RiskEvaluation {
@@ -119,6 +122,9 @@ export interface RiskReason {
   severity: ReasonSeverity;
   message: string;
   signal_value?: string;
+  source_engine?: string;
+  contribution?: number;
+  evidence?: string;
 }
 
 export interface RiskEvent {
@@ -171,6 +177,8 @@ export interface RiskEventSummary {
   evaluated_at: string;
   has_feedback: boolean;
   latest_feedback_classification: FeedbackClassification | null;
+  case_status: string;
+  assigned_to?: string;
 }
 
 export interface RiskEventListResponse {
@@ -194,6 +202,9 @@ export interface RiskEventDetail {
   transaction: Transaction;
   risk_reasons: TriggeredRule[];
   feedback_history: FeedbackResponse[];
+  case_status: string;
+  assigned_to?: string;
+  case_notes?: string;
 }
 
 export interface RiskEventStatistics {

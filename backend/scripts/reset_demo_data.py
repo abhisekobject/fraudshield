@@ -51,15 +51,12 @@ _DEMO_DB_PATH = os.environ.get("DEMO_DB_PATH", str(Path(__file__).resolve().pare
 if not os.environ.get("DEMO_USE_POSTGRES"):
     os.environ["DATABASE_URL"] = f"sqlite:///{_DEMO_DB_PATH}"
 
-from sqlalchemy import text
-from app.database.session import engine, Base, SessionLocal
-from app.database.models import User, Device, Recipient, Transaction
-from app.database.models.enums import TransactionStatus
-from fastapi.testclient import TestClient
-from app.main import app
-from app.database.models.risk_event import RiskEvent
-from app.database.models.feedback import AnalystFeedback
-from app.database.models.enums import FeedbackClassification
+from sqlalchemy import text  # noqa: E402
+from app.database.session import engine, Base, SessionLocal  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from app.main import app  # noqa: E402
+from app.database.models.risk_event import RiskEvent  # noqa: E402
+from app.database.models.enums import FeedbackClassification  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Deterministic UUIDs (Fixed seeds for reproducibility)
@@ -128,15 +125,16 @@ def seed_entities(db) -> None:
     "ua": now
 })
 
-    for rec_id, identifier, first_seen, tx_count in [
-        (REC_TRUSTED.hex, "rec_trusted_001@upi", past_180, 10),
-        (REC_NEW_001.hex, "rec_new_001@upi",     now,      0),
-        (REC_NEW_002.hex, "rec_new_002@upi",     now,      0),
+    for rec_id, identifier, first_seen, tx_count, is_trusted_rec in [
+        (REC_TRUSTED.hex, "rec_trusted_001@upi", past_180, 10, True),
+        (REC_NEW_001.hex, "rec_new_001@upi",     now,      0,  False),
+        (REC_NEW_002.hex, "rec_new_002@upi",     now,      0,  False),
     ]:
         db.execute(text("""
     INSERT INTO recipients (id, user_id, recipient_identifier, is_trusted, first_seen_at, transaction_count, created_at, updated_at)
-    VALUES (:id, :uid, :identifier, TRUE, :first, :tx_count, :ca, :ua)
+    VALUES (:id, :uid, :identifier, :is_trusted, :first, :tx_count, :ca, :ua)
 """), {"id": rec_id, "uid": USER_001_ID.hex, "identifier": identifier,
+       "is_trusted": is_trusted_rec,
        "first": first_seen, "tx_count": tx_count, "ca": now, "ua": now})
 
     db.commit()
@@ -229,7 +227,7 @@ def create_demo_scenario_events(client) -> None:
     print("  [Scenario 1] Normal payment...")
     p1 = make_payment(500, str(DEV_TRUSTED), str(REC_TRUSTED))
     if p1:
-        eid = get_risk_event_id(p1["id"])
+        eid = get_risk_event_id(p1["transaction"]["id"])
         if eid:
             submit_feedback(eid, FeedbackClassification.LEGITIMATE.value,
                             "Routine payment, confirmed as legitimate by customer history.")
@@ -238,7 +236,7 @@ def create_demo_scenario_events(client) -> None:
     print("  [Scenario 2] New device...")
     p2 = make_payment(2000, str(DEV_NEW), str(REC_TRUSTED))
     if p2:
-        eid = get_risk_event_id(p2["id"])
+        eid = get_risk_event_id(p2["transaction"]["id"])
         if eid:
             submit_feedback(eid, FeedbackClassification.FALSE_POSITIVE.value,
                             "User purchased a new phone. Transfer was verified by callback.")
@@ -247,10 +245,15 @@ def create_demo_scenario_events(client) -> None:
     print("  [Scenario 3] High amount anomaly...")
     p3 = make_payment(15000, str(DEV_TRUSTED), str(REC_TRUSTED))
     if p3:
-        eid = get_risk_event_id(p3["id"])
+        eid = get_risk_event_id(p3["transaction"]["id"])
         if eid:
             submit_feedback(eid, FeedbackClassification.UNCERTAIN.value,
                             "Awaiting customer callback to confirm large transfer.")
+
+    # Scenario 4 — High velocity (HIGH)
+    print("  [Scenario 4] High velocity...")
+    make_payment(800, str(DEV_TRUSTED), str(REC_TRUSTED))
+    # Leave unreviewed — velocity scenario is best shown live in the simulator
 
     # Scenario 5 — Voice phishing (HIGH/CRITICAL)
     print("  [Scenario 5] Voice phishing...")
@@ -260,7 +263,7 @@ def create_demo_scenario_events(client) -> None:
     )
     p5 = make_payment(4000, str(DEV_TRUSTED), str(REC_TRUSTED), phishing_transcript)
     if p5:
-        eid = get_risk_event_id(p5["id"])
+        eid = get_risk_event_id(p5["transaction"]["id"])
         if eid:
             submit_feedback(eid, FeedbackClassification.CONFIRMED_FRAUD.value,
                             "Classic vishing attack: bank impersonation + OTP harvest.")
@@ -273,7 +276,7 @@ def create_demo_scenario_events(client) -> None:
     )
     p6 = make_payment(25000, str(DEV_TRUSTED), str(REC_NEW_001), coercive_transcript)
     if p6:
-        get_risk_event_id(p6["id"])  # Leave unreviewed for demo
+        get_risk_event_id(p6["transaction"]["id"])  # Leave unreviewed for demo
 
     # Scenario 7 — Multi-signal attack (CRITICAL)
     print("  [Scenario 7] Multi-signal attack...")
@@ -283,7 +286,7 @@ def create_demo_scenario_events(client) -> None:
     )
     p7 = make_payment(95000, str(DEV_UNTRUSTED), str(REC_NEW_002), multi_transcript)
     if p7:
-        eid = get_risk_event_id(p7["id"])
+        eid = get_risk_event_id(p7["transaction"]["id"])
         if eid:
             submit_feedback(eid, FeedbackClassification.CONFIRMED_FRAUD.value,
                             "Multi-vector fraud: new untrusted device, unknown recipient, "

@@ -35,6 +35,9 @@ class TriggeredRule(BaseModel):
     severity: ReasonSeverity
     explanation: str
     signal_value: Optional[float] = None
+    source_engine: str = "RULE"
+    contribution: Optional[float] = None
+    evidence: Optional[str] = None
 
 
 class RiskEvaluation(BaseModel):

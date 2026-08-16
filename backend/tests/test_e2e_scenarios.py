@@ -19,6 +19,13 @@ REC_TRUSTED   = "a0000000-0000-0000-0000-000000000020"
 REC_NEW_001   = "a0000000-0000-0000-0000-000000000021"
 REC_NEW_002   = "a0000000-0000-0000-0000-000000000022"
 
+# Ordinal helper for RiskLevel comparisons (str enum can't use >= reliably)
+RISK_ORDER = {RiskLevel.LOW: 0, RiskLevel.MEDIUM: 1, RiskLevel.HIGH: 2, RiskLevel.CRITICAL: 3}
+
+def risk_gte(level, minimum):
+    """Return True if level is >= minimum in severity order."""
+    return RISK_ORDER.get(RiskLevel(level), 0) >= RISK_ORDER.get(RiskLevel(minimum), 0)
+
 
 @pytest.fixture(autouse=True)
 def setup_demo_data(db_session):
@@ -104,7 +111,7 @@ def test_scenario_2_new_device(client, db_session):
 
     import uuid
     event = db_session.query(RiskEvent).filter_by(transaction_id=uuid.UUID(resp.json()["transaction"]["id"])).first()
-    assert event.risk_level >= RiskLevel.MEDIUM
+    assert risk_gte(event.risk_level, RiskLevel.MEDIUM)
     reasons = db_session.query(RiskReason).filter_by(risk_event_id=event.id).all()
     assert any(r.reason_code == "NEW_DEVICE" for r in reasons)
 
@@ -140,7 +147,7 @@ def test_scenario_5_voice_phishing(client, db_session):
 
     import uuid
     event = db_session.query(RiskEvent).filter_by(transaction_id=uuid.UUID(resp.json()["transaction"]["id"])).first()
-    assert event.risk_level >= RiskLevel.HIGH
+    assert risk_gte(event.risk_level, RiskLevel.HIGH)
     reasons = db_session.query(RiskReason).filter_by(risk_event_id=event.id).all()
     assert any(r.reason_code == "SE-002" for r in reasons) # AUTHORITY_IMPERSONATION
     assert any(r.reason_code == "SE-004" for r in reasons) # CREDENTIAL_REQUEST

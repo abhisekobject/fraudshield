@@ -42,12 +42,22 @@ class BaseRule(ABC):
         """
         pass
 
-    def _build_trigger(self, explanation: str, signal_value: Optional[float] = None) -> TriggeredRule:
+    def _build_trigger(
+        self, 
+        explanation: str, 
+        signal_value: Optional[float] = None,
+        source_engine: str = "RULE",
+        contribution: Optional[float] = None,
+        evidence: Optional[str] = None
+    ) -> TriggeredRule:
         """Helper to construct the TriggeredRule."""
         return TriggeredRule(
             rule_id=self.rule_id,
             reason_code=self.reason_code,
             severity=self.severity,
             explanation=explanation,
-            signal_value=signal_value
+            signal_value=signal_value,
+            source_engine=source_engine,
+            contribution=contribution,
+            evidence=evidence
         )
