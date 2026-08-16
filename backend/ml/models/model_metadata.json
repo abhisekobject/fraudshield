@@ -1,0 +1,26 @@
+{
+  "model_version": "ml-v1",
+  "model_type": "RandomForest",
+  "training_seed": 42,
+  "feature_list": [
+    "amount",
+    "amount_ratio_to_average",
+    "device_is_trusted",
+    "device_transaction_count",
+    "device_is_new",
+    "recipient_transaction_count",
+    "recipient_is_new",
+    "transactions_last_10_minutes",
+    "transactions_last_1_hour"
+  ],
+  "training_sample_count": 14000,
+  "test_sample_count": 6000,
+  "training_timestamp": "2026-08-15T10:30:02.163516+00:00",
+  "evaluation_metrics": {
+    "precision": 0.995850622406639,
+    "recall": 1.0,
+    "f1": 0.997920997920998,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0
+  }
+}

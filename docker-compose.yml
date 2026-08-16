@@ -1,0 +1,74 @@
+# FraudShield — Development Environment
+# ========================================
+# Docker is not currently installed on the development machine.
+# This file is prepared for future use.
+#
+# When Docker is available, run:
+#   docker compose up -d
+#
+# This will start: frontend, backend API, and PostgreSQL.
+
+version: "3.9"
+
+services:
+
+  # -------------------------------------------------------------------
+  # PostgreSQL database
+  # -------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: fraudshield_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: fraudshield_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-change_me_in_production}
+      POSTGRES_DB: fraudshield_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fraudshield_user -d fraudshield_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # -------------------------------------------------------------------
+  # Backend API
+  # -------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: fraudshield_backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://fraudshield_user:${DB_PASSWORD:-change_me_in_production}@db:5432/fraudshield_db
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  # -------------------------------------------------------------------
+  # Frontend
+  # -------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/Dockerfile.frontend
+    container_name: fraudshield_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
