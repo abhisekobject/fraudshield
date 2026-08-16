@@ -15,6 +15,9 @@ class TriggeredRuleResponse(BaseModel):
     reason_code: str
     explanation: str = Field(validation_alias="message")
     severity: str
+    source_engine: str | None = None
+    contribution: float | None = None
+    evidence: str | None = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
@@ -33,6 +36,8 @@ class RiskEventSummary(BaseModel):
     evaluated_at: datetime
     has_feedback: bool
     latest_feedback_classification: str | None = None
+    case_status: str = "NEW"
+    assigned_to: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,6 +67,9 @@ class RiskEventDetail(BaseModel):
     # Explainability
     risk_reasons: list[TriggeredRuleResponse]
     feedback_history: list[FeedbackResponse] = Field(default_factory=list, validation_alias="analyst_feedback")
+    case_status: str = "NEW"
+    assigned_to: str | None = None
+    case_notes: str | None = None
 
     model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 

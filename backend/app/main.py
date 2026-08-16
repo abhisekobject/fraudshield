@@ -6,11 +6,14 @@ FastAPI application factory, middleware, and startup configuration.
 
 import uuid
 import logging
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.core.config import settings
+from app.database.session import get_db
 
 logger = logging.getLogger("fraudshield.main")
 
@@ -128,9 +131,6 @@ async def health_check() -> dict:
 # ---------------------------------------------------------------------------
 # Readiness check — readiness probe
 # ---------------------------------------------------------------------------
-from fastapi import Depends
-from sqlalchemy.orm import Session
-from app.database.session import get_db
 
 @app.get("/ready", tags=["diagnostics"])
 async def readiness_check(db: Session = Depends(get_db)) -> dict:
@@ -148,7 +148,6 @@ async def readiness_check(db: Session = Depends(get_db)) -> dict:
 
     The application is considered READY unless the database is unreachable.
     """
-    from sqlalchemy import text
     from app.api.routes.payments import _orchestrator
 
     # --- Database ping ---

@@ -4,11 +4,11 @@ from pathlib import Path
 # Add the project root to sys.path so we can import from app
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from fastapi.testclient import TestClient
-from app.main import app
-from app.database.session import engine, Base, SessionLocal
-from app.database.models.enums import FeedbackClassification
-from app.schemas.feedback import FeedbackCreateRequest
+from fastapi.testclient import TestClient # noqa: E402
+from app.main import app # noqa: E402
+from app.database.session import engine, Base, SessionLocal # noqa: E402
+from app.database.models.enums import FeedbackClassification # noqa: E402
+from app.schemas.feedback import FeedbackCreateRequest # noqa: E402
 
 client = TestClient(app)
 
@@ -91,52 +91,60 @@ def main():
     trusted_device = str(d1_id)
     trusted_recipient = str(r1_id)
 
-    def get_event_id_for_tx(tx_id: str) -> str:
+    def get_event_id_for_tx(tx_id: str) -> str | None:
         db = SessionLocal()
         from app.database.models.risk_event import RiskEvent
         import uuid
         event = db.query(RiskEvent).filter(RiskEvent.transaction_id == uuid.UUID(tx_id)).first()
         db.close()
-        return str(event.id)
+        return str(event.id) if event else None
 
     # 1. Legitimate low-risk transaction
     print("Seeding Legitimate Transaction...")
     p1 = create_payment(user_id, 500, trusted_device, trusted_recipient)
-    e1_id = get_event_id_for_tx(p1["id"])
-    
+
     # 2. New-device transaction (High Amount)
     print("Seeding New Device Transaction...")
     p2 = create_payment(user_id, 15000, str(d2_id), trusted_recipient)
-    e2_id = get_event_id_for_tx(p2["id"])
 
     # 3. Voice-phishing-related transaction
     print("Seeding Voice Phishing Transaction...")
-    p3 = create_payment(user_id, 4000, trusted_device, str(r2_id), "I am from bank security. Tell me the OTP immediately.")
-    e3_id = get_event_id_for_tx(p3["id"])
-    
+    p3 = create_payment(user_id, 4000, trusted_device, str(r2_id),
+                        "I am calling from bank security. Tell me the OTP immediately.")
+
     # 4. Critical multi-signal transaction
     print("Seeding Multi-Signal Attack...")
-    p4 = create_payment(user_id, 95000, str(d3_id), str(r3_id), "Your account is frozen. Do not hang up. Transfer all funds to the safe account right now.")
-    e4_id = get_event_id_for_tx(p4["id"])
+    p4 = create_payment(user_id, 95000, str(d3_id), str(r3_id),
+                        "Your account is frozen. Do not hang up. Transfer all funds to the safe account right now.")
+
+    # Fetch risk event IDs after all payments are created
+    e1_id = get_event_id_for_tx(p1["transaction"]["id"]) if p1 else None
+    e2_id = get_event_id_for_tx(p2["transaction"]["id"]) if p2 else None
+    e3_id = get_event_id_for_tx(p3["transaction"]["id"]) if p3 else None
+    e4_id = get_event_id_for_tx(p4["transaction"]["id"]) if p4 else None
     
     # Now, simulate Analyst Reviews
 
     # Mark Legitimate one as FALSE_POSITIVE (e.g. maybe it was wrongly flagged in an older system, though here it's LOW)
     # Actually, marking a LOW risk as LEGITIMATE
     print("Seeding Analyst Feedback: Legitimate")
-    submit_feedback(e1_id, FeedbackClassification.LEGITIMATE, "Normal transaction, confirmed by customer history.")
+    if e1_id:
+        submit_feedback(e1_id, FeedbackClassification.LEGITIMATE.value, "Normal transaction, confirmed by customer history.")
     
     # Mark New Device as FALSE_POSITIVE
     print("Seeding Analyst Feedback: False Positive")
-    submit_feedback(e2_id, FeedbackClassification.FALSE_POSITIVE, "User bought a new phone and confirmed the emergency transfer.")
+    if e2_id:
+        submit_feedback(e2_id, FeedbackClassification.FALSE_POSITIVE.value, "User bought a new phone and confirmed the emergency transfer.")
     
     # Mark Multi-Signal as CONFIRMED_FRAUD
     print("Seeding Analyst Feedback: Confirmed Fraud")
-    submit_feedback(e4_id, FeedbackClassification.CONFIRMED_FRAUD, "Multiple independent signals indicate coordinated social engineering and payment fraud.")
+    if e4_id:
+        submit_feedback(e4_id, FeedbackClassification.CONFIRMED_FRAUD.value, "Multiple independent signals indicate coordinated social engineering and payment fraud.")
     
     # Leave Voice Phishing unreviewed (Needs Review / Pending) -> Or we can mark UNCERTAIN
     print("Seeding Analyst Feedback: Needs Review")
-    submit_feedback(e3_id, FeedbackClassification.UNCERTAIN, "Escalating to Tier 2 fraud squad.")
+    if e3_id:
+        submit_feedback(e3_id, FeedbackClassification.UNCERTAIN.value, "Escalating to Tier 2 fraud squad.")
 
     print("Demo Data Seeded Successfully!")
     print("Available events generated for analyst dashboard.")

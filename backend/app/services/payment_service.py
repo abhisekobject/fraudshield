@@ -24,8 +24,9 @@ def validate_payment_ownership(
 ) -> None:
     """
     Ensures that the user, recipient, and device exist in the database.
-    For the POC/Hackathon, if they do not exist (e.g. random inputs), 
-    we dynamically create them so the ML model can evaluate them as unseen entities.
+    If a recipient or device already exists but belongs to a different user, raises 400.
+    If they do not exist (e.g. random inputs from simulator), we dynamically create them
+    so the ML model can evaluate them as unseen entities.
     """
     # 1. User exists
     user = db.execute(select(User).where(User.id == user_id)).scalar_one_or_none()
@@ -33,38 +34,49 @@ def validate_payment_ownership(
         user = User(id=user_id, email=f"{user_id}@demo.local", name="Demo User")
         db.add(user)
 
-    # 2. Recipient belongs to user
+    # 2. Recipient belongs to user (or create it)
     recipient = db.execute(
         select(Recipient).where(Recipient.id == recipient_id)
     ).scalar_one_or_none()
-    
+
     if not recipient:
         recipient = Recipient(
-            id=recipient_id, 
-            user_id=user_id, 
+            id=recipient_id,
+            user_id=user_id,
             recipient_identifier=f"ACC-{recipient_id}",
             first_seen_at=datetime.now(timezone.utc)
         )
         db.add(recipient)
+    elif recipient.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Recipient {recipient_id} does not belong to user {user_id}.",
+        )
 
-    # 3. Device belongs to user
+    # 3. Device belongs to user (or create it)
     device = db.execute(
         select(Device).where(Device.id == device_id)
     ).scalar_one_or_none()
-    
+
     if not device:
         now = datetime.now(timezone.utc)
         device = Device(
-            id=device_id, 
-            user_id=user_id, 
+            id=device_id,
+            user_id=user_id,
             device_fingerprint=f"DEV-{device_id}",
             first_seen_at=now,
             last_seen_at=now
         )
         db.add(device)
+    elif device.user_id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Device {device_id} does not belong to user {user_id}.",
+        )
 
     # Commit any newly created entities so the foreign keys for the transaction are valid
     db.commit()
+
 
 
 def validate_state_transition(

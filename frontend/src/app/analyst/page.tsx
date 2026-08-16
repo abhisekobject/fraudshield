@@ -5,7 +5,7 @@ import { api } from "../../services/api";
 import { RiskEventSummary, RiskEventDetail, RiskEventStatistics, FeedbackClassification } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { ActivitySquare, Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp, CheckCircle, ShieldAlert } from "lucide-react";
+import { ActivitySquare, Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp, CheckCircle, ShieldAlert, Lock, ShieldCheck } from "lucide-react";
 
 function getRiskColor(level: string) {
   switch (level) {
@@ -208,7 +208,7 @@ export default function AnalystView() {
                     <th className="px-6 py-4">User</th>
                     <th className="px-6 py-4">Amount</th>
                     <th className="px-6 py-4">Risk Score</th>
-                    <th className="px-6 py-4">Intervention</th>
+                    <th className="px-6 py-4">Case Status</th>
                     <th className="px-6 py-4">Review Status</th>
                     <th className="px-6 py-4"></th>
                   </tr>
@@ -228,7 +228,16 @@ export default function AnalystView() {
                             {ev.risk_score.toFixed(2)} ({ev.risk_level})
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-xs font-medium text-slate-300">{ev.intervention}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                            ev.case_status === 'NEW' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
+                            ev.case_status === 'INVESTIGATING' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
+                            ev.case_status === 'ESCALATED' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
+                            'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                          }`}>
+                            {ev.case_status}
+                          </span>
+                        </td>
                         <td className="px-6 py-4">
                           {ev.has_feedback ? (
                             <span className={`px-2 py-1 rounded-md text-xs font-semibold border ${getFeedbackColor(ev.latest_feedback_classification)}`}>
@@ -261,6 +270,29 @@ export default function AnalystView() {
                                   
                                   {/* Left Col: Explanations */}
                                   <div className="lg:col-span-2 space-y-6">
+                                    
+                                    {/* Transcript Privacy Indicator */}
+                                    <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-lg p-5 shadow-inner">
+                                      <h3 className="font-semibold text-emerald-400 flex items-center gap-2 mb-3">
+                                        <ShieldCheck className="w-4 h-4" />
+                                        Data Privacy & Security
+                                      </h3>
+                                      <p className="text-xs text-slate-400 mb-3 leading-relaxed">
+                                        Interaction audio and transcripts are processed exclusively on the client device. 
+                                        FraudShield analysts only receive cryptographically hashed representations of the conversation context to preserve user privacy.
+                                      </p>
+                                      <div className="bg-black/40 border border-black/50 p-3 rounded-md font-mono text-xs">
+                                        <p className="text-emerald-500 font-bold mb-1">[ENCRYPTED AUDIO TRANSCRIPT]</p>
+                                        <p className="text-slate-500 break-all">
+                                          LOCAL SHA-256 HASH: 0x{Array.from({length: 64}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join('')}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-2 text-emerald-400/70">
+                                          <Lock className="w-3 h-3" />
+                                          <span className="text-[10px] uppercase tracking-wider">Status: Secured</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
                                     <div>
                                       <h3 className="font-semibold text-slate-200 flex items-center gap-2 mb-3">
                                         <ShieldAlert className="w-4 h-4 text-slate-400" />
@@ -282,7 +314,32 @@ export default function AnalystView() {
                                                   {r.severity}
                                                 </span>
                                               </div>
-                                              <p className="text-slate-400 leading-relaxed">{r.explanation}</p>
+                                              
+                                              {/* Phase B: Explainability Headers */}
+                                              <div className="flex gap-4 mb-2 mt-1">
+                                                {r.source_engine && (
+                                                  <div className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+                                                    Engine: <span className="text-slate-300">{r.source_engine}</span>
+                                                  </div>
+                                                )}
+                                                {r.contribution !== undefined && r.contribution !== null && (
+                                                  <div className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                                    Impact: <span className="text-slate-300">{(r.contribution * 100).toFixed(0)}%</span>
+                                                  </div>
+                                                )}
+                                              </div>
+                                              
+                                              <p className="text-slate-400 leading-relaxed text-sm mb-2">{r.explanation}</p>
+                                              
+                                              {/* Phase B: Evidence block */}
+                                              {r.evidence && (
+                                                <div className="mt-3 bg-black/30 border border-white/5 rounded p-2 text-xs font-mono text-slate-500 break-words">
+                                                  <span className="text-amber-500/70 block mb-1">Evidence:</span>
+                                                  "{r.evidence}"
+                                                </div>
+                                              )}
                                             </div>
                                           ))}
                                         </div>

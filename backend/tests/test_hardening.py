@@ -66,6 +66,7 @@ def test_fusion_all_low():
         social_score=0.0,
         social_available=True,
         rule_level=RiskLevel.LOW,
+        social_level=RiskLevel.LOW,
         triggered_rules=[]
     )
     assert level == RiskLevel.LOW
@@ -81,6 +82,7 @@ def test_fusion_all_critical():
         social_score=0.9,
         social_available=True,
         rule_level=RiskLevel.CRITICAL,
+        social_level=RiskLevel.CRITICAL,
         triggered_rules=[]
     )
     assert level == RiskLevel.CRITICAL
@@ -97,6 +99,7 @@ def test_fusion_deterministic_safety_floor():
         social_score=0.0,
         social_available=True,
         rule_level=RiskLevel.HIGH, # This is the safety floor
+        social_level=RiskLevel.LOW,
         triggered_rules=[]
     )
     assert level == RiskLevel.HIGH
@@ -112,6 +115,7 @@ def test_fusion_degraded_graceful():
         social_score=0.5,
         social_available=True,
         rule_level=RiskLevel.MEDIUM,
+        social_level=RiskLevel.MEDIUM,
         triggered_rules=[]
     )
     assert level == RiskLevel.MEDIUM

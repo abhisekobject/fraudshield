@@ -77,7 +77,9 @@ class RiskEventService:
                 intervention=event.intervention,
                 evaluated_at=event.evaluated_at,
                 has_feedback=len(sorted_fb) > 0,
-                latest_feedback_classification=latest_classification
+                latest_feedback_classification=latest_classification,
+                case_status=event.case_status,
+                assigned_to=event.assigned_to
             ))
             
         return RiskEventListResponse(

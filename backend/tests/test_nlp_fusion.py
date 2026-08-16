@@ -11,7 +11,7 @@ def test_fusion_all_signals_low(fusion_engine):
     score, level, intervention = fusion_engine.fuse(
         rule_score=0.1, ml_probability=0.1, ml_available=True,
         social_score=0.1, social_available=True,
-        rule_level=RiskLevel.LOW, triggered_rules=[]
+        rule_level=RiskLevel.LOW, social_level=RiskLevel.LOW, triggered_rules=[]
     )
     assert level == RiskLevel.LOW
     assert intervention == InterventionType.PROCEED
@@ -21,7 +21,7 @@ def test_fusion_missing_social_signal(fusion_engine):
     score, level, intervention = fusion_engine.fuse(
         rule_score=0.9, ml_probability=0.9, ml_available=True,
         social_score=0.0, social_available=False,
-        rule_level=RiskLevel.HIGH, triggered_rules=[]
+        rule_level=RiskLevel.HIGH, social_level=RiskLevel.LOW, triggered_rules=[]
     )
     assert score > 0.85
     assert level == RiskLevel.CRITICAL
@@ -32,7 +32,7 @@ def test_fusion_deterministic_override(fusion_engine):
     score, level, intervention = fusion_engine.fuse(
         rule_score=0.9, ml_probability=0.01, ml_available=True,
         social_score=0.01, social_available=True,
-        rule_level=RiskLevel.CRITICAL, triggered_rules=[]
+        rule_level=RiskLevel.CRITICAL, social_level=RiskLevel.LOW, triggered_rules=[]
     )
     assert level == RiskLevel.CRITICAL
     assert intervention == InterventionType.VERIFICATION
@@ -47,7 +47,7 @@ def test_fusion_social_risk_elevation(fusion_engine):
     score, level, intervention = fusion_engine.fuse(
         rule_score=0.5, ml_probability=0.5, ml_available=True,
         social_score=1.0, social_available=True,
-        rule_level=RiskLevel.MEDIUM, triggered_rules=[]
+        rule_level=RiskLevel.MEDIUM, social_level=RiskLevel.MEDIUM, triggered_rules=[]
     )
     assert 0.62 < score < 0.63
     assert level == RiskLevel.MEDIUM

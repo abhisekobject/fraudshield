@@ -73,6 +73,24 @@ class RiskReason(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         comment="Continuous value for the signal (if applicable, e.g., 0.91 for urgency). Null for categorical signals.",
     )
 
+    source_engine: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        comment="Engine that generated this reason: RULE, ML, NLP, BEHAVIOR, DEVICE, RECIPIENT",
+    )
+
+    contribution: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+        comment="Contribution to the final risk score (0.0-1.0)",
+    )
+
+    evidence: Mapped[str | None] = mapped_column(
+        String(1024),
+        nullable=True,
+        comment="Supporting evidence text for this risk factor",
+    )
+
     # --- Relationships ------------------------------------------------------
     risk_event: Mapped["RiskEvent"] = relationship(
         "RiskEvent",

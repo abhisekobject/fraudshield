@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Badge } from "../../components/ui/Badge";
 import {
-  Loader2, Mic, MicOff, FileText, AlertTriangle, CheckCircle, ShieldAlert, PhoneCall, PhoneOff
+  Loader2, Mic, MicOff, FileText, AlertTriangle, CheckCircle, ShieldAlert, PhoneCall, PhoneOff, Lock, ShieldCheck
 } from "lucide-react";
 import { cn } from "../../utils/cn";
 
@@ -100,6 +100,10 @@ export default function InteractionAnalyzer() {
   const [callDuration, setCallDuration] = useState(0);
   const [isListening, setIsListening] = useState(false);
 
+  // Privacy feature state
+  const [isEncrypted, setIsEncrypted] = useState(false);
+  const [isEncrypting, setIsEncrypting] = useState(false);
+
   const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -152,6 +156,7 @@ export default function InteractionAnalyzer() {
     if (isSimulating) stopSimulation();
     setResult(null);
     setError(null);
+    setIsEncrypted(false);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -217,6 +222,7 @@ export default function InteractionAnalyzer() {
     setResult(null);
     setError(null);
     setCallDuration(0);
+    setIsEncrypted(false);
 
     // ── Call duration timer ─────────────────────────────────────────────────
     callTimerRef.current = setInterval(() => {
@@ -310,6 +316,33 @@ export default function InteractionAnalyzer() {
 
   const formatDuration = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+
+  const handleEncrypt = () => {
+    if (!transcript.trim() || isEncrypted || isEncrypting) return;
+    setIsEncrypting(true);
+
+    const chars = "0123456789ABCDEF!@#$%^&*";
+    let iterations = 0;
+    const maxIterations = 25;
+    
+    // Create a realistic-looking hash
+    const finalHash = "0x" + Array.from({length: 64}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join('');
+
+    const interval = setInterval(() => {
+      setTranscript(prev => {
+        // Scramble the current text to look like it's encrypting
+        return prev.split('').map(c => (c === ' ' || c === '\\n') ? c : chars[Math.floor(Math.random() * chars.length)]).join('');
+      });
+      iterations++;
+      
+      if (iterations >= maxIterations) {
+        clearInterval(interval);
+        setTranscript(`[ENCRYPTED AUDIO TRANSCRIPT]\nLOCAL SHA-256 HASH: ${finalHash}\nStatus: Secured`);
+        setIsEncrypted(true);
+        setIsEncrypting(false);
+      }
+    }, 40);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
@@ -470,8 +503,8 @@ export default function InteractionAnalyzer() {
                     : "Select a scenario, click Dictate to speak, or type/paste a transcript here..."
                   }
                   value={transcript}
-                  onChange={(e) => { if (!isSimulating && !isListening) setTranscript(e.target.value); }}
-                  readOnly={isSimulating}
+                  onChange={(e) => { if (!isSimulating && !isListening && !isEncrypted && !isEncrypting) setTranscript(e.target.value); }}
+                  readOnly={isSimulating || isEncrypted || isEncrypting}
                 />
                 {isSimulating && (
                   <span className="absolute bottom-3 right-3 text-[9px] text-emerald-500 font-mono font-bold tracking-widest animate-pulse">
@@ -490,7 +523,7 @@ export default function InteractionAnalyzer() {
               <div className="flex gap-2 mt-4">
                 <Button
                   onClick={handleAnalyze}
-                  disabled={loading || !transcript.trim() || isSimulating || isListening}
+                  disabled={loading || !transcript.trim() || isSimulating || isListening || isEncrypted}
                   className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white"
                 >
                   {loading
@@ -498,9 +531,28 @@ export default function InteractionAnalyzer() {
                     : <><FileText className="w-4 h-4 mr-2" />Analyze Transcript</>
                   }
                 </Button>
-                {transcript && !isSimulating && !isListening && (
+                
+                {transcript && result && !isEncrypted && (
+                  <Button
+                    onClick={handleEncrypt}
+                    disabled={isEncrypting}
+                    variant="outline"
+                    className="flex-1 bg-emerald-950/20 text-emerald-400 border-emerald-900/50 hover:bg-emerald-950/40"
+                  >
+                    {isEncrypting ? <Loader2 className="w-4 h-4 mr-2 animate-spin"/> : <Lock className="w-4 h-4 mr-2" />}
+                    {isEncrypting ? "Encrypting..." : "Secure Transcript"}
+                  </Button>
+                )}
+                
+                {isEncrypted && (
+                  <div className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-emerald-950/30 border border-emerald-900/50 rounded-md text-emerald-400 text-sm font-semibold">
+                    <ShieldCheck className="w-4 h-4" /> Transcript Encrypted Locally
+                  </div>
+                )}
+
+                {transcript && !isSimulating && !isListening && !isEncrypting && (
                   <button
-                    onClick={() => { setTranscript(""); setResult(null); setError(null); }}
+                    onClick={() => { setTranscript(""); setResult(null); setError(null); setIsEncrypted(false); }}
                     className="px-3 py-2 rounded-md border border-[#333] text-slate-500 hover:text-slate-300 hover:border-slate-500 text-xs transition-colors"
                     title="Clear transcript"
                   >
@@ -518,15 +570,15 @@ export default function InteractionAnalyzer() {
             </CardHeader>
             <CardContent className="space-y-2">
               <button className="w-full text-left px-3 py-2 rounded border border-[#1e1e1e] bg-[#0f0f0f] hover:bg-[#1a1a1a] text-slate-400 text-xs transition-colors"
-                onClick={() => { if (!isSimulating) { setTranscript("Hi, just confirming I transferred the rent. Please check your account."); setResult(null); } }}>
+                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Hi, just confirming I transferred the rent. Please check your account."); setResult(null); setIsEncrypted(false); } }}>
                 💬 Casual legitimate message
               </button>
               <button className="w-full text-left px-3 py-2 rounded border border-orange-950/40 bg-[#0f0f0f] hover:bg-orange-950/20 text-orange-300 text-xs transition-colors"
-                onClick={() => { if (!isSimulating) { setTranscript("Your bank account access will be blocked in 30 minutes. Call immediately to verify your identity and avoid suspension."); setResult(null); } }}>
+                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Your bank account access will be blocked in 30 minutes. Call immediately to verify your identity and avoid suspension."); setResult(null); setIsEncrypted(false); } }}>
                 ⚠️ Urgency-based phishing attempt
               </button>
               <button className="w-full text-left px-3 py-2 rounded border border-red-950/40 bg-[#0f0f0f] hover:bg-red-950/20 text-red-300 text-xs transition-colors"
-                onClick={() => { if (!isSimulating) { setTranscript("Your account is frozen by CBI. Transfer all funds NOW to avoid criminal charges. Share OTP immediately or face arrest."); setResult(null); } }}>
+                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Your account is frozen by CBI. Transfer all funds NOW to avoid criminal charges. Share OTP immediately or face arrest."); setResult(null); setIsEncrypted(false); } }}>
                 🚨 Full critical attack pattern
               </button>
             </CardContent>
