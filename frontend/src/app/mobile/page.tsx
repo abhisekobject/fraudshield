@@ -260,6 +260,15 @@ function AnalysisPanel({
 
   return (
     <div className="absolute left-8 top-1/2 -translate-y-1/2 w-[300px] z-20">
+      <style>{`
+        @keyframes dotPulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.4); }
+        }
+        .animate-dot-pulse {
+          animation: dotPulse 1.2s ease-in-out infinite;
+        }
+      `}</style>
       <h3 className="text-[14px] font-bold text-slate-900 mb-2 tracking-wide">
         Backend & ML Model
       </h3>
@@ -274,9 +283,8 @@ function AnalysisPanel({
         {/* Log output */}
       <div ref={scrollRef} className="h-[440px] overflow-y-auto space-y-0.5 scrollbar-none">
         {logLines.length === 0 && (
-          <div className="flex items-center gap-1.5 mt-4">
-            <div className="w-2 h-3.5 bg-emerald-400 animate-pulse rounded-sm"></div>
-            <span className="text-[12px] text-slate-500">Awaiting transaction or call...</span>
+          <div className="flex items-center mt-4">
+            <div className="w-2 h-2 bg-white rounded-full animate-dot-pulse ml-1"></div>
           </div>
         )}
         {displayed.map((entry, i) => (
@@ -284,7 +292,7 @@ function AnalysisPanel({
             {entry.text}
             {/* Blinking cursor on the last line */}
             {i === displayed.length - 1 && (
-              <span className="inline-block w-1.5 h-3 bg-emerald-400 ml-0.5 animate-pulse align-middle"></span>
+              <span className="inline-block w-2 h-2 bg-white rounded-full ml-1.5 animate-dot-pulse align-middle"></span>
             )}
           </div>
         ))}
