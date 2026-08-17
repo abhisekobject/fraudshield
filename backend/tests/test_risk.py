@@ -135,18 +135,19 @@ def test_orchestrator_full_pipeline(db_session, risk_user, risk_device, risk_rec
     # Because it's a first time transaction, it should trigger:
     # 1. NEW_DEVICE
     # 2. NEW_RECIPIENT
-    # -> Risk Level should be MEDIUM
-    
-    assert eval_result.risk_level == RiskLevel.MEDIUM
-    assert len(eval_result.triggered_rules) == 2
+    # 3. SUSPICIOUS_RECIPIENT_VELOCITY (Phase E)
+    # -> Risk Level should be HIGH
+
+    assert eval_result.risk_level == RiskLevel.HIGH
+    assert len(eval_result.triggered_rules) == 3
     
     # Verify DB Persistence
     risk_event = db_session.query(RiskEvent).filter_by(transaction_id=tx.id).first()
     assert risk_event is not None
-    assert risk_event.risk_level == RiskLevel.MEDIUM
+    assert risk_event.risk_level == RiskLevel.HIGH
     
     reasons = db_session.query(RiskReason).filter_by(risk_event_id=risk_event.id).all()
-    assert len(reasons) == 2
+    assert len(reasons) == 3
     reason_codes = [r.reason_code for r in reasons]
     assert "NEW_DEVICE" in reason_codes
     assert "NEW_RECIPIENT" in reason_codes

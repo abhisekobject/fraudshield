@@ -46,6 +46,42 @@ class NewRecipientRule(BaseRule):
         return None
 
 
+class UntrustedRecipientRule(BaseRule):
+    rule_id = "RULE-007"
+    reason_code = "UNTRUSTED_RECIPIENT"
+    severity = ReasonSeverity.HIGH
+
+    def evaluate(self, features: Dict[str, RiskFeature]) -> Optional[TriggeredRule]:
+        recipient_trusted = features.get("recipient_is_trusted")
+        # If recipient is specifically flagged as not trusted (explicit negative signal)
+        if recipient_trusted and recipient_trusted.is_available and recipient_trusted.value is False:
+            # We only want to trigger this if they actually have history but are untrusted.
+            # If it's just a brand new recipient, NewRecipientRule covers it.
+            recipient_new = features.get("recipient_is_new")
+            if recipient_new and recipient_new.is_available and recipient_new.value is False:
+                return self._build_trigger(
+                    "This recipient has been previously flagged as untrusted."
+                )
+        return None
+
+
+class SuspiciousRecipientVelocityRule(BaseRule):
+    rule_id = "RULE-008"
+    reason_code = "SUSPICIOUS_RECIPIENT_VELOCITY"
+    severity = ReasonSeverity.MEDIUM
+
+    def evaluate(self, features: Dict[str, RiskFeature]) -> Optional[TriggeredRule]:
+        days_added = features.get("recipient_days_since_added")
+        tx_count = features.get("recipient_transaction_count")
+        
+        if days_added and days_added.is_available and tx_count and tx_count.is_available:
+            if days_added.value < 1 and tx_count.value == 0:
+                return self._build_trigger(
+                    "This recipient was added less than 24 hours ago and has no successful transaction history."
+                )
+        return None
+
+
 class UntrustedDeviceRule(BaseRule):
     rule_id = "RULE-003"
     reason_code = "UNTRUSTED_DEVICE"

@@ -1,1 +1,88 @@
 @import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --color-paper: var(--color-paper-val);
+  --color-surface: var(--color-surface-val);
+  --color-ink: var(--color-ink-val);
+  --color-ink-muted: var(--color-ink-muted-val);
+  --color-hairline: var(--color-hairline-val);
+  --color-hairline-interactive: var(--color-hairline-interactive-val);
+  --color-accent: var(--color-accent-val);
+  --color-accent-interactive: var(--color-accent-interactive-val);
+  --color-accent-soft: var(--color-accent-soft-val);
+
+  --color-risk-low: var(--color-risk-low-val);
+  --color-risk-low-bg: var(--color-risk-low-bg-val);
+  --color-risk-medium: var(--color-risk-medium-val);
+  --color-risk-medium-bg: var(--color-risk-medium-bg-val);
+  --color-risk-high: var(--color-risk-high-val);
+  --color-risk-high-bg: var(--color-risk-high-bg-val);
+  --color-risk-critical: var(--color-risk-critical-val);
+  --color-risk-critical-bg: var(--color-risk-critical-bg-val);
+  
+  --color-nlp: var(--color-nlp-val);
+  --color-nlp-bg: var(--color-nlp-bg-val);
+  --color-analyst: var(--color-analyst-val);
+}
+
+@layer base {
+  :root {
+    --font-display: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+
+    /* Background base: pure black */
+    --color-paper-val: #000000;
+    /* Surface / cards: light grey tile */
+    --color-surface-val: #1a1a1a;
+    /* Text primary */
+    --color-ink-val: #ffffff;
+    /* Text secondary (slate-300) / muted (slate-500) */
+    --color-ink-muted-val: #64748b; 
+    
+    /* Border subtle */
+    --color-hairline-val: #222222;
+    /* Border interactive */
+    --color-hairline-interactive-val: #444444;
+
+    /* Default interactive accent (can use emerald or blue depending on context) */
+    --color-accent-val: #10b981; /* emerald-500 */
+    --color-accent-interactive-val: #059669; /* emerald-600 */
+    --color-accent-soft-val: rgba(16, 185, 129, 0.1);
+
+    /* Risk / Status Accents */
+    /* Safe */
+    --color-risk-low-val: #10b981;
+    --color-risk-low-bg-val: rgba(16, 185, 129, 0.1);
+    /* Warning */
+    --color-risk-medium-val: #f59e0b;
+    --color-risk-medium-bg-val: rgba(245, 158, 11, 0.1);
+    /* High Risk */
+    --color-risk-high-val: #f97316;
+    --color-risk-high-bg-val: rgba(249, 115, 22, 0.1);
+    /* Critical */
+    --color-risk-critical-val: #ef4444;
+    --color-risk-critical-bg-val: rgba(239, 68, 68, 0.1);
+    
+    /* Info/NLP */
+    --color-nlp-val: #3b82f6; /* blue-500 */
+    --color-nlp-bg-val: rgba(59, 130, 246, 0.1);
+    /* Analyst */
+    --color-analyst-val: #f59e0b;
+  }
+
+  body {
+    background-color: var(--color-paper-val);
+    color: var(--color-ink-val);
+    font-family: var(--font-body);
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-hairline-interactive-val);
+    outline-offset: 2px;
+  }
+}

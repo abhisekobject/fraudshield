@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 
 export function BackendStatusBanner() {
-  const [isOffline, setIsOffline] = useState(false);
+  const [status, setStatus] = useState<"checking" | "online" | "offline">("checking");
 
   useEffect(() => {
     let mounted = true;
@@ -13,9 +13,9 @@ export function BackendStatusBanner() {
       try {
         const res = await fetch("http://localhost:8000/health");
         if (!res.ok) throw new Error("Offline");
-        if (mounted) setIsOffline(false);
+        if (mounted) setStatus("online");
       } catch {
-        if (mounted) setIsOffline(true);
+        if (mounted) setStatus("offline");
       }
     };
 
@@ -29,12 +29,21 @@ export function BackendStatusBanner() {
     };
   }, []);
 
-  if (!isOffline) return null;
+  if (status === "online") return null;
+
+  if (status === "checking") {
+    return (
+      <div className="bg-risk-medium-bg border-b border-risk-medium/20 text-risk-medium px-4 py-1.5 text-xs font-medium flex items-center justify-center gap-2 shadow-sm z-50 sticky top-0">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+        <span>Checking backend status...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-red-500 text-white px-4 py-3 text-sm font-medium flex items-center justify-center gap-2 shadow-sm z-50 sticky top-0">
-      <AlertCircle className="w-4 h-4" />
-      <span>FraudShield backend is currently unavailable. Ensure the FastAPI server is running on port 8000.</span>
+    <div className="bg-red-900 border-b border-red-500 text-white px-4 py-2 text-sm font-medium flex items-center justify-center gap-2 shadow-sm z-50 sticky top-0">
+      <AlertCircle className="w-4 h-4 text-red-400" />
+      <span>⚠ Backend offline — ensure FastAPI is running on port 8000</span>
     </div>
   );
 }

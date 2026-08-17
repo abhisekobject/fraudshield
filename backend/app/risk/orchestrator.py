@@ -21,7 +21,8 @@ from app.risk.analyzers.behavior_analyzer import BehaviorAnalyzer
 from app.risk.rules.engine import RuleEngine
 from app.risk.rules.definitions import (
     NewDeviceRule, NewRecipientRule, UntrustedDeviceRule,
-    AmountAnomalyRule, HighTransactionVelocityRule, MultipleRecentTransactionsRule
+    AmountAnomalyRule, HighTransactionVelocityRule, MultipleRecentTransactionsRule,
+    UntrustedRecipientRule, SuspiciousRecipientVelocityRule
 )
 from app.ml.inference import MLInferenceService
 from app.ml.fusion import RiskFusionEngine
@@ -50,7 +51,9 @@ class RiskOrchestrator:
             UntrustedDeviceRule(),
             AmountAnomalyRule(),
             HighTransactionVelocityRule(),
-            MultipleRecentTransactionsRule()
+            MultipleRecentTransactionsRule(),
+            UntrustedRecipientRule(),
+            SuspiciousRecipientVelocityRule()
         ])
         
         # Initialize ML and Fusion

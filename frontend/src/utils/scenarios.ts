@@ -33,17 +33,23 @@ const REC_NEW_002   = "a0000000-0000-0000-0000-000000000022"; // Seeded: new rec
 // velocity counts and change the expected risk outcome.
 // The backend auto-creates these users on first call.
 // ─────────────────────────────────────────────────────────────────────────────
-const USER_NORMAL   = DEMO_USER;                              // Uses seeded history (avg, device trust)
-const USER_VELOCITY = DEMO_USER;                              // Shares seeded 4 recent txns
-const USER_AMOUNT   = "b0000000-0000-0000-0000-000000000002"; // Isolated for amount anomaly demo
-const USER_PHISHING = "b0000000-0000-0000-0000-000000000003"; // Isolated for NLP phishing demo
-const USER_COERCIVE = "b0000000-0000-0000-0000-000000000004"; // Isolated for coercive transfer
-const USER_MULTI    = "b0000000-0000-0000-0000-000000000005"; // Isolated for multi-signal attack
+// USER_NORMAL uses a dedicated "clean" user so it always shows LOW risk.
+// The backend auto-creates this user on first call — it has no prior history.
+const USER_NORMAL   = "c0000000-0000-0000-0000-000000000001"; // Clean user for LOW demo
+const USER_VELOCITY = DEMO_USER;                              
+const USER_AMOUNT   = DEMO_USER; 
+const USER_PHISHING = DEMO_USER; 
+const USER_COERCIVE = DEMO_USER; 
+const USER_MULTI    = DEMO_USER; 
+
+// Dedicated trusted device and recipient for the clean (LOW-risk) user
+const DEV_CLEAN = "c0000000-0000-0000-0000-000000000010";
+const REC_CLEAN = "c0000000-0000-0000-0000-000000000020";
 
 export const DEMO_SCENARIOS: DemoScenario[] = [
   // ──────────────────────────────────────────────────────────────────────────
   // Scenario 1: Normal Payment → Expected: LOW
-  // All signals clean: trusted device + known recipient + normal amount.
+  // Clean isolated user — no velocity, trusted device, known recipient.
   // ──────────────────────────────────────────────────────────────────────────
   {
     id: "normal_payment",
@@ -52,8 +58,8 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
       "An ordinary transaction using an established trusted device and a known recipient. Amount is within the user's historical average. All signals normal — ML predicts LOW fraud probability.",
     payload: {
       userId: USER_NORMAL,
-      deviceId: DEV_TRUSTED,
-      recipientId: REC_TRUSTED,
+      deviceId: DEV_CLEAN,
+      recipientId: REC_CLEAN,
       amount: "500",
       includeContext: false,
       transcript: "",
@@ -74,7 +80,7 @@ export const DEMO_SCENARIOS: DemoScenario[] = [
     description:
       "A payment from a device that has never been used for this account before. RULE-001 (NEW_DEVICE) triggers with MEDIUM severity. Requires user confirmation.",
     payload: {
-      userId: USER_NORMAL,
+      userId: DEMO_USER,      // DEV_NEW and REC_TRUSTED are seeded under DEMO_USER
       deviceId: DEV_NEW,
       recipientId: REC_TRUSTED,
       amount: "2000",

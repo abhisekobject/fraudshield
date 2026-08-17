@@ -35,9 +35,8 @@ from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
     Boolean, DateTime, ForeignKey, Index, Integer,
-    String, UniqueConstraint
+    String, UniqueConstraint, Uuid
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -71,7 +70,7 @@ class Recipient(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # --- Foreign key --------------------------------------------------------
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )

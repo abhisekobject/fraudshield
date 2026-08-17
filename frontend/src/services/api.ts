@@ -55,7 +55,7 @@ export const api = {
   async createPayment(request: CreatePaymentRequest): Promise<PaymentResponse> {
     // Simulate ML/NLP processing time for dramatic effect in demo
     await new Promise(resolve => setTimeout(resolve, 2500));
-    const res = await fetch(`${API_BASE}/payments/`, {
+    const res = await fetch(`${API_BASE}/payments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),

@@ -9,8 +9,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database.session import Base
@@ -28,7 +27,7 @@ class PrivacyAuditEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
 
     transaction_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         nullable=True,
         comment="Associated transaction (if applicable)",
     )

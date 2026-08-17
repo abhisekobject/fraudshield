@@ -22,8 +22,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Index, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -54,7 +53,7 @@ class RiskEvent(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # --- Foreign key --------------------------------------------------------
     transaction_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("transactions.id", ondelete="CASCADE"),
         nullable=False,
     )

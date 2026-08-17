@@ -18,8 +18,7 @@ Privacy note:
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKey, Index, String
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Float, ForeignKey, Index, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -43,7 +42,7 @@ class RiskReason(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # --- Foreign key --------------------------------------------------------
     risk_event_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("risk_events.id", ondelete="CASCADE"),
         nullable=False,
     )

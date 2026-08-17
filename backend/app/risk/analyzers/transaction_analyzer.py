@@ -8,8 +8,9 @@ from typing import List
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 from decimal import Decimal
+from datetime import datetime, timezone
 
-from app.database.models import Transaction
+from app.database.models import Transaction, Recipient
 from app.risk.types import TransactionContext, RiskFeature
 
 class TransactionAnalyzer:
@@ -19,9 +20,9 @@ class TransactionAnalyzer:
         features = []
 
         features.append(RiskFeature(
-            name="current_amount",
-            value=context.amount,
-            feature_type="Decimal",
+            name="amount",          # Must match FEATURE_ORDER in app/ml/features.py
+            value=float(context.amount),
+            feature_type="float",
         ))
 
         # Query historical average amount (excluding the current transaction)
@@ -69,6 +70,64 @@ class TransactionAnalyzer:
                 value=None,
                 feature_type="float",
                 is_available=False
+            ))
+            
+        # ---------------------------------------------------------------------
+        # Phase E: Recipient Risk Intelligence
+        # ---------------------------------------------------------------------
+        recipient_query = select(Recipient).where(Recipient.id == context.recipient_id)
+        recipient = db.execute(recipient_query).scalar_one_or_none()
+        
+        if recipient:
+            features.append(RiskFeature(
+                name="recipient_is_trusted",
+                value=recipient.is_trusted,
+                feature_type="bool",
+            ))
+            features.append(RiskFeature(
+                name="recipient_transaction_count",
+                value=recipient.transaction_count,
+                feature_type="int",
+            ))
+            
+            # Recipient velocity: How recently was the recipient added?
+            if recipient.first_seen_at:
+                # Normalize both datetimes to UTC-naive to avoid offset-naive vs
+                # offset-aware subtraction errors (SQLite stores naive datetimes).
+                def _to_naive_utc(dt: datetime) -> datetime:
+                    if dt.tzinfo is not None:
+                        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+                    return dt
+
+                initiated = _to_naive_utc(context.initiated_at)
+                first_seen = _to_naive_utc(recipient.first_seen_at)
+                days_since_added = (initiated - first_seen).days
+                features.append(RiskFeature(
+                    name="recipient_days_since_added",
+                    value=days_since_added,
+                    feature_type="int",
+                ))
+            else:
+                features.append(RiskFeature(
+                    name="recipient_days_since_added",
+                    value=0,
+                    feature_type="int",
+                ))
+        else:
+            features.append(RiskFeature(
+                name="recipient_is_trusted",
+                value=False,
+                feature_type="bool",
+            ))
+            features.append(RiskFeature(
+                name="recipient_transaction_count",
+                value=0,
+                feature_type="int",
+            ))
+            features.append(RiskFeature(
+                name="recipient_days_since_added",
+                value=0,
+                feature_type="int",
             ))
 
         return features

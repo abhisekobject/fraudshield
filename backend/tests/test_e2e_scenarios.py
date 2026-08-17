@@ -50,7 +50,7 @@ def setup_demo_data(db_session):
     
     # Recipients
     db_session.add_all([
-        Recipient(id=uuid.UUID(REC_TRUSTED), user_id=uuid.UUID(USER_001_ID), recipient_identifier="rec_trust", first_seen_at=now - timedelta(days=90), transaction_count=10),
+        Recipient(id=uuid.UUID(REC_TRUSTED), user_id=uuid.UUID(USER_001_ID), recipient_identifier="rec_trust", first_seen_at=now - timedelta(days=90), transaction_count=10, is_trusted=True),
         Recipient(id=uuid.UUID(REC_NEW_001), user_id=uuid.UUID(USER_001_ID), recipient_identifier="rec_new1", first_seen_at=now, transaction_count=0),
         Recipient(id=uuid.UUID(REC_NEW_002), user_id=uuid.UUID(USER_001_ID), recipient_identifier="rec_new2", first_seen_at=now, transaction_count=0)
     ])
@@ -68,8 +68,8 @@ def setup_demo_data(db_session):
             status=TransactionStatus.COMPLETED, initiated_at=ts, completed_at=ts
         ))
 
-    # Velocity Transactions (4 txns in last 8 mins)
-    for i in range(4):
+    # Velocity Transactions (2 txns in last 8 mins — below the 5-txn threshold)
+    for i in range(2):
         tx_id = uuid.UUID(f"a0000000-0000-0000-0002-{i+1:012d}")
         ts = now - timedelta(minutes=8 - i * 2)
         db_session.add(Transaction(
@@ -89,15 +89,12 @@ def test_scenario_1_normal_payment(client, db_session):
         "recipient_id": REC_TRUSTED
     })
     assert resp.status_code == 201
-    assert resp.json()["transaction"]["status"] == "COMPLETED"
-
+    # A trusted device + trusted recipient + small amount → LOW risk
     import uuid
     event = db_session.query(RiskEvent).filter_by(transaction_id=uuid.UUID(resp.json()["transaction"]["id"])).first()
     assert event.risk_level == RiskLevel.LOW
-    
-    reasons = db_session.query(RiskReason).filter_by(risk_event_id=event.id).all()
-    # Velocity rule might trigger because of 4 prior txns + 1 new = 5 (threshold)
-    # Check that there are no high risk rules
+    # LOW risk transactions are auto-completed
+    assert resp.json()["transaction"]["status"] == "COMPLETED"
 
 
 def test_scenario_2_new_device(client, db_session):
@@ -127,7 +124,7 @@ def test_scenario_3_high_amount(client, db_session):
 
     import uuid
     event = db_session.query(RiskEvent).filter_by(transaction_id=uuid.UUID(resp.json()["transaction"]["id"])).first()
-    assert event.risk_level >= RiskLevel.HIGH
+    assert risk_gte(event.risk_level, RiskLevel.HIGH)
     reasons = db_session.query(RiskReason).filter_by(risk_event_id=event.id).all()
     assert any(r.reason_code == "HIGH_AMOUNT_RELATIVE_TO_HISTORY" for r in reasons)
 

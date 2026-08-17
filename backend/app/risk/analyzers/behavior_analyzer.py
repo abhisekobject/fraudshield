@@ -19,7 +19,13 @@ class BehaviorAnalyzer:
     def extract(self, db: Session, context: TransactionContext) -> List[RiskFeature]:
         features = []
 
-        now = context.initiated_at
+        # Normalize context.initiated_at to naive UTC so SQLite WHERE comparisons work.
+        # SQLite stores datetimes as naive strings; Python's datetime from the API is tz-aware.
+        _dt = context.initiated_at
+        if _dt.tzinfo is not None:
+            from datetime import timezone as _tz
+            _dt = _dt.astimezone(_tz.utc).replace(tzinfo=None)
+        now = _dt
         ten_mins_ago = now - timedelta(minutes=10)
         one_hour_ago = now - timedelta(hours=1)
 
@@ -46,6 +52,7 @@ class BehaviorAnalyzer:
             Transaction.initiated_at <= now
         )
         tx_1h_count = db.execute(q_1h).scalar() or 0
+
 
         features.append(RiskFeature(
             name="transactions_last_10_minutes",

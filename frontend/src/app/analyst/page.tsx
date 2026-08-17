@@ -5,26 +5,27 @@ import { api } from "../../services/api";
 import { RiskEventSummary, RiskEventDetail, RiskEventStatistics, FeedbackClassification } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { ActivitySquare, Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp, CheckCircle, ShieldAlert, Lock, ShieldCheck } from "lucide-react";
+import { Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp, CheckCircle, ScanEye, BadgeCheck, Fingerprint, OctagonAlert } from "lucide-react";
+import { TileIcon } from "../../components/ui/TileIcon";
 
 function getRiskColor(level: string) {
   switch (level) {
-    case "LOW": return "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-    case "MEDIUM": return "bg-amber-500/20 text-amber-400 border border-amber-500/30";
-    case "HIGH": return "bg-orange-500/20 text-orange-400 border border-orange-500/30";
-    case "CRITICAL": return "bg-red-500/20 text-red-400 border border-red-500/30";
-    default: return "bg-white/10 text-slate-300 border border-white/20";
+    case "LOW": return "bg-risk-low-bg text-risk-low";
+    case "MEDIUM": return "bg-risk-medium-bg text-risk-medium";
+    case "HIGH": return "bg-risk-high-bg text-risk-high";
+    case "CRITICAL": return "bg-risk-critical-bg text-risk-critical";
+    default: return "bg-black/5 text-ink-muted border border-hairline";
   }
 }
 
 function getFeedbackColor(classification: FeedbackClassification | null) {
-  if (!classification) return "bg-white/5 text-slate-500 border border-white/10";
+  if (!classification) return "bg-black/5 text-ink-muted border border-hairline";
   switch (classification) {
-    case FeedbackClassification.LEGITIMATE: return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
-    case FeedbackClassification.FALSE_POSITIVE: return "bg-blue-500/20 text-blue-400 border-blue-500/30";
-    case FeedbackClassification.CONFIRMED_FRAUD: return "bg-red-500/20 text-red-400 border-red-500/30";
-    case FeedbackClassification.UNCERTAIN: return "bg-amber-500/20 text-amber-400 border-amber-500/30";
-    default: return "bg-white/10 text-slate-300 border-white/20";
+    case FeedbackClassification.LEGITIMATE: return "bg-risk-low-bg text-risk-low";
+    case FeedbackClassification.FALSE_POSITIVE: return "bg-accent-soft text-accent";
+    case FeedbackClassification.CONFIRMED_FRAUD: return "bg-risk-critical-bg text-risk-critical";
+    case FeedbackClassification.UNCERTAIN: return "bg-risk-medium-bg text-risk-medium";
+    default: return "bg-black/5 text-ink-muted";
   }
 }
 
@@ -122,23 +123,20 @@ export default function AnalystView() {
     <div className="space-y-8 animate-in fade-in duration-500 max-w-6xl mx-auto pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3 text-white">
-            <ActivitySquare className="w-10 h-10 text-amber-500" />
+          <h1 className="text-[36px] font-display font-bold tracking-tight flex items-center gap-3 text-white">
+            <TileIcon icon={ScanEye} className="w-16 h-16 bg-white" iconClassName="w-10 h-10 text-emerald-500" />
             Analyst Review Queue
           </h1>
-          <p className="text-slate-400 mt-2 text-lg">
-            Review flagged transactions, investigate RiskReasons, and manage false positives.
-          </p>
         </div>
-        <Button variant="outline" onClick={fetchData} disabled={loading} className="gap-2 bg-transparent border-white/20 text-white hover:bg-white/10">
+        <Button variant="outline" onClick={fetchData} disabled={loading} className="gap-2">
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
       {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 text-red-700 flex items-start gap-3">
+        <Card className="border-risk-critical/20 bg-risk-critical-bg">
+          <CardContent className="pt-6 text-risk-critical flex items-start gap-3">
              <AlertCircle className="w-5 h-5 mt-0.5" />
              <p className="text-sm font-medium">{error}</p>
           </CardContent>
@@ -148,61 +146,61 @@ export default function AnalystView() {
       {/* Stats Summary */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-sm font-medium text-slate-400 mb-1">Total Risk Events</p>
-              <h3 className="text-3xl font-bold text-white">{stats.total_events}</h3>
-              <div className="flex gap-4 mt-2 text-xs text-slate-500">
+              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Total Risk Events</p>
+              <h3 className="text-[32px] font-display font-bold text-white">{stats.total_events}</h3>
+              <div className="flex gap-4 mt-2 text-[12px] text-ink-muted">
                 <span>{stats.reviewed_count} Reviewed</span>
                 <span>{stats.unreviewed_count} Pending</span>
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-sm font-medium text-slate-400 mb-1">False Positives (Reported)</p>
-              <h3 className="text-3xl font-bold text-blue-400">{stats.false_positive_count}</h3>
-              <p className="mt-2 text-xs text-slate-500">
+              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">False Positives (Reported)</p>
+              <h3 className="text-[32px] font-display font-bold text-emerald-400">{stats.false_positive_count}</h3>
+              <p className="mt-2 text-[12px] text-ink-muted">
                 {stats.false_positive_rate !== null ? `${(stats.false_positive_rate * 100).toFixed(1)}% of reviewed` : "N/A"}
               </p>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-sm font-medium text-slate-400 mb-1">Confirmed Fraud</p>
-              <h3 className="text-3xl font-bold text-red-400">{stats.true_positive_count}</h3>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Confirmed Fraud</p>
+              <h3 className="text-[32px] font-display font-bold text-red-500">{stats.true_positive_count}</h3>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-sm font-medium text-slate-400 mb-1">Legitimate (True Negatives)</p>
-              <h3 className="text-3xl font-bold text-emerald-400">{stats.legitimate_count}</h3>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Legitimate (True Negatives)</p>
+              <h3 className="text-[32px] font-display font-bold text-emerald-500">{stats.legitimate_count}</h3>
             </CardContent>
           </Card>
         </div>
       )}
 
-      <Card>
-        <CardHeader className="border-b border-white/10 bg-black/20">
+      <Card className="bg-surface">
+        <CardHeader className="border-b border-hairline bg-[#1f1f1f]">
           <CardTitle className="text-lg text-white">Risk Events Queue</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {loading && events.length === 0 ? (
-            <div className="flex justify-center items-center p-12 text-slate-400">
-              <Loader2 className="w-8 h-8 animate-spin" />
+            <div className="flex justify-center items-center p-12 text-ink-muted">
+              <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center p-12 text-slate-400">
+            <div className="text-center p-12 text-ink-muted">
               <p>No risk events found.</p>
               <p className="text-sm mt-1">Run a simulation in the Payment Simulator to generate data.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-black/40 text-slate-400 font-medium border-b border-white/10">
+                <thead className="bg-[#1f1f1f] text-slate-400 font-medium border-b border-hairline text-[12px] uppercase tracking-wider">
                   <tr>
                     <th className="px-6 py-4">Event ID</th>
                     <th className="px-6 py-4">User</th>
@@ -213,45 +211,56 @@ export default function AnalystView() {
                     <th className="px-6 py-4"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-hairline">
                   {events.map((ev) => (
                     <React.Fragment key={ev.id}>
                       <tr 
-                        className={`hover:bg-white/[0.05] transition-colors cursor-pointer ${expandedId === ev.id ? 'bg-white/[0.02]' : ''}`}
+                        className={`hover:bg-neutral-900 transition-colors cursor-pointer ${expandedId === ev.id ? 'bg-neutral-900' : ''}`}
                         onClick={() => toggleExpand(ev.id)}
                       >
-                        <td className="px-6 py-4 font-mono text-xs text-slate-300">{ev.id.split('-')[0]}...</td>
-                        <td className="px-6 py-4 font-mono text-xs text-slate-300">{ev.user_id.split('-')[0]}</td>
-                        <td className="px-6 py-4 font-medium text-slate-200">₹{ev.amount.toFixed(2)}</td>
+                        <td className="px-6 py-4 font-mono text-xs text-white">{ev.id.split('-')[0]}...</td>
+                        <td className="px-6 py-4 font-mono text-xs text-white">{ev.user_id.split('-')[0]}</td>
+                        <td className="px-6 py-4 font-medium text-white">₹{ev.amount.toFixed(2)}</td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-md text-xs font-semibold ${getRiskColor(ev.risk_level)}`}>
+                          <span className={`px-2 py-1 rounded-[4px] text-xs font-semibold ${
+                            ev.risk_level === 'LOW' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                            ev.risk_level === 'CRITICAL' ? 'bg-red-500/20 text-red-500 border border-red-500/30' : 
+                            ev.risk_level === 'HIGH' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' : 
+                            'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                          }`}>
                             {ev.risk_score.toFixed(2)} ({ev.risk_level})
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                            ev.case_status === 'NEW' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
-                            ev.case_status === 'INVESTIGATING' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' :
-                            ev.case_status === 'ESCALATED' ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20' :
-                            'bg-slate-500/10 text-slate-400 border border-slate-500/20'
+                          <span className={`px-2 py-1 rounded-[4px] text-xs font-semibold ${
+                            ev.case_status === 'NEW' ? 'bg-black/5 text-ink' :
+                            ev.case_status === 'INVESTIGATING' ? 'bg-amber-500/20 text-amber-400' :
+                            ev.case_status === 'ESCALATED' ? 'bg-red-500/20 text-red-500' :
+                            'bg-black/5 text-ink-muted'
                           }`}>
                             {ev.case_status}
                           </span>
                         </td>
                         <td className="px-6 py-4">
                           {ev.has_feedback ? (
-                            <span className={`px-2 py-1 rounded-md text-xs font-semibold border ${getFeedbackColor(ev.latest_feedback_classification)}`}>
+                            <span className={`px-2 py-1 rounded-[4px] text-xs font-semibold ${
+                              ev.latest_feedback_classification === FeedbackClassification.LEGITIMATE ? 'bg-emerald-500/20 text-emerald-400' :
+                              ev.latest_feedback_classification === FeedbackClassification.FALSE_POSITIVE ? 'bg-slate-700/50 text-slate-300' :
+                              ev.latest_feedback_classification === FeedbackClassification.CONFIRMED_FRAUD ? 'bg-red-500/20 text-red-500' :
+                              ev.latest_feedback_classification === FeedbackClassification.UNCERTAIN ? 'bg-amber-500/20 text-amber-400' :
+                              'bg-black/5 text-ink-muted'
+                            }`}>
                               {ev.latest_feedback_classification}
                             </span>
                           ) : (
-                            <span className="text-slate-500 text-xs">Unreviewed</span>
+                            <span className="text-ink-muted text-xs">Unreviewed</span>
                           )}
                         </td>
                         <td className="px-6 py-4 text-right">
                           {expandedId === ev.id ? (
-                            <ChevronUp className="w-5 h-5 text-slate-500 inline" />
+                            <ChevronUp className="w-5 h-5 text-ink-muted inline" />
                           ) : (
-                            <ChevronDown className="w-5 h-5 text-slate-500 inline" />
+                            <ChevronDown className="w-5 h-5 text-ink-muted inline" />
                           )}
                         </td>
                       </tr>
@@ -259,10 +268,10 @@ export default function AnalystView() {
                       {/* Expanded Detail Panel */}
                       {expandedId === ev.id && (
                         <tr>
-                          <td colSpan={7} className="p-0 border-b border-white/10">
-                            <div className="bg-[#09090b] p-6 shadow-inner">
+                          <td colSpan={7} className="p-0 border-b border-hairline">
+                            <div className="bg-black p-6 border-t border-hairline shadow-sm">
                               {detailLoading ? (
-                                <div className="flex justify-center p-8 text-slate-500">
+                                <div className="flex justify-center p-8 text-emerald-500">
                                   <Loader2 className="w-6 h-6 animate-spin" />
                                 </div>
                               ) : expandedDetail ? (
@@ -272,44 +281,44 @@ export default function AnalystView() {
                                   <div className="lg:col-span-2 space-y-6">
                                     
                                     {/* Transcript Privacy Indicator */}
-                                    <div className="bg-emerald-950/20 border border-emerald-900/40 rounded-lg p-5 shadow-inner">
+                                    <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-[4px] p-5 shadow-sm">
                                       <h3 className="font-semibold text-emerald-400 flex items-center gap-2 mb-3">
-                                        <ShieldCheck className="w-4 h-4" />
+                                        <TileIcon icon={BadgeCheck} className="p-0.5" iconClassName="w-4 h-4 text-emerald-400" />
                                         Data Privacy & Security
                                       </h3>
-                                      <p className="text-xs text-slate-400 mb-3 leading-relaxed">
-                                        Interaction audio and transcripts are processed exclusively on the client device. 
-                                        FraudShield analysts only receive cryptographically hashed representations of the conversation context to preserve user privacy.
+                                      <p className="text-[12px] text-emerald-200/70 mb-3 leading-relaxed">
+                                        Interaction audio and transcripts are processed securely via server-side NLP Risk Engine. 
+                                        FraudShield analysts only receive cryptographically hashed representations of the conversation context to preserve user privacy. Audio data is discarded immediately after analysis.
                                       </p>
-                                      <div className="bg-black/40 border border-black/50 p-3 rounded-md font-mono text-xs">
+                                      <div className="bg-[#1f1f1f] border border-hairline-interactive p-3 rounded-[4px] font-mono text-[12px]">
                                         <p className="text-emerald-500 font-bold mb-1">[ENCRYPTED AUDIO TRANSCRIPT]</p>
                                         <p className="text-slate-500 break-all">
                                           LOCAL SHA-256 HASH: 0x{Array.from({length: 64}, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join('')}
                                         </p>
-                                        <div className="flex items-center gap-1.5 mt-2 text-emerald-400/70">
-                                          <Lock className="w-3 h-3" />
+                                        <div className="flex items-center gap-1.5 mt-2 text-emerald-500/70">
+                                          <TileIcon icon={Fingerprint} className="p-0.5" iconClassName="w-3 h-3 text-emerald-400" />
                                           <span className="text-[10px] uppercase tracking-wider">Status: Secured</span>
                                         </div>
                                       </div>
                                     </div>
 
                                     <div>
-                                      <h3 className="font-semibold text-slate-200 flex items-center gap-2 mb-3">
-                                        <ShieldAlert className="w-4 h-4 text-slate-400" />
+                                      <h3 className="font-semibold text-white flex items-center gap-2 mb-3">
+                                        <TileIcon icon={OctagonAlert} className="p-0.5" iconClassName="w-4 h-4 text-ink-muted" />
                                         Triggered Rules & Explanations
                                       </h3>
                                       {expandedDetail.risk_reasons.length > 0 ? (
                                         <div className="space-y-3">
                                           {expandedDetail.risk_reasons.map((r, i) => (
-                                            <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-4 text-sm">
+                                            <div key={i} className="bg-surface border border-hairline rounded-[6px] p-4 text-[14px]">
                                               <div className="flex items-center justify-between mb-2">
-                                                <span className="font-mono text-xs font-semibold text-slate-300 bg-white/10 px-2 py-1 rounded">
+                                                <span className="font-mono text-[12px] font-semibold text-white bg-[#1f1f1f] px-2 py-1 rounded-[4px]">
                                                   {r.reason_code}
                                                 </span>
                                                 <span className={`text-[10px] uppercase font-bold tracking-wider ${
-                                                  r.severity === 'CRITICAL' ? 'text-red-400' :
-                                                  r.severity === 'HIGH' ? 'text-orange-400' :
-                                                  'text-slate-400'
+                                                  r.severity === 'CRITICAL' ? 'text-red-500' :
+                                                  r.severity === 'HIGH' ? 'text-orange-500' :
+                                                  'text-ink-muted'
                                                 }`}>
                                                   {r.severity}
                                                 </span>
@@ -318,25 +327,25 @@ export default function AnalystView() {
                                               {/* Phase B: Explainability Headers */}
                                               <div className="flex gap-4 mb-2 mt-1">
                                                 {r.source_engine && (
-                                                  <div className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
+                                                  <div className="text-[10px] uppercase tracking-wide text-ink-muted flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
-                                                    Engine: <span className="text-slate-300">{r.source_engine}</span>
+                                                    Engine: <span className="text-white">{r.source_engine}</span>
                                                   </div>
                                                 )}
                                                 {r.contribution !== undefined && r.contribution !== null && (
-                                                  <div className="text-[10px] uppercase tracking-wide text-slate-500 flex items-center gap-1">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
-                                                    Impact: <span className="text-slate-300">{(r.contribution * 100).toFixed(0)}%</span>
+                                                  <div className="text-[10px] uppercase tracking-wide text-ink-muted flex items-center gap-1">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                    Impact: <span className="text-white">{(r.contribution * 100).toFixed(0)}%</span>
                                                   </div>
                                                 )}
                                               </div>
                                               
-                                              <p className="text-slate-400 leading-relaxed text-sm mb-2">{r.explanation}</p>
+                                              <p className="text-slate-400 leading-relaxed text-[14px] mb-2">{r.explanation}</p>
                                               
                                               {/* Phase B: Evidence block */}
                                               {r.evidence && (
-                                                <div className="mt-3 bg-black/30 border border-white/5 rounded p-2 text-xs font-mono text-slate-500 break-words">
-                                                  <span className="text-amber-500/70 block mb-1">Evidence:</span>
+                                                <div className="mt-3 bg-[#1f1f1f] border border-hairline rounded-[4px] p-2 text-[12px] font-mono text-slate-400 break-words">
+                                                  <span className="text-white block mb-1">Evidence:</span>
                                                   "{r.evidence}"
                                                 </div>
                                               )}
@@ -344,28 +353,34 @@ export default function AnalystView() {
                                           ))}
                                         </div>
                                       ) : (
-                                        <p className="text-sm text-slate-500 italic">No specific rules triggered.</p>
+                                        <p className="text-[14px] text-ink-muted italic">No specific rules triggered.</p>
                                       )}
                                     </div>
                                     
                                     {/* Audit Trail */}
                                     {expandedDetail.feedback_history.length > 0 && (
                                       <div>
-                                        <h3 className="font-semibold text-slate-200 flex items-center gap-2 mb-3">
-                                          <CheckCircle className="w-4 h-4 text-slate-400" />
+                                        <h3 className="font-semibold text-white flex items-center gap-2 mb-3">
+                                          <TileIcon icon={CheckCircle} className="p-0.5" iconClassName="w-4 h-4 text-ink-muted" />
                                           Feedback History
                                         </h3>
                                         <div className="space-y-2">
                                           {expandedDetail.feedback_history.map((fb, i) => (
-                                            <div key={i} className="bg-white/5 border border-white/10 rounded-lg p-3 text-sm flex justify-between items-start">
+                                            <div key={i} className="bg-surface border border-hairline rounded-[6px] p-3 text-[14px] flex justify-between items-start">
                                               <div>
-                                                <span className={`px-2 py-0.5 rounded text-xs font-semibold mr-3 border ${getFeedbackColor(fb.classification)}`}>
+                                                <span className={`px-2 py-0.5 rounded-[4px] text-[12px] font-semibold mr-3 border-transparent ${
+                                                  fb.classification === FeedbackClassification.LEGITIMATE ? 'bg-emerald-500/20 text-emerald-400' :
+                                                  fb.classification === FeedbackClassification.FALSE_POSITIVE ? 'bg-slate-700/50 text-slate-300' :
+                                                  fb.classification === FeedbackClassification.CONFIRMED_FRAUD ? 'bg-red-500/20 text-red-500' :
+                                                  fb.classification === FeedbackClassification.UNCERTAIN ? 'bg-amber-500/20 text-amber-400' :
+                                                  'bg-black/5 text-ink-muted'
+                                                }`}>
                                                   {fb.classification}
                                                 </span>
-                                                <span className="text-slate-500 text-xs">by {fb.analyst_identifier}</span>
+                                                <span className="text-ink-muted text-[12px]">by {fb.analyst_identifier}</span>
                                                 {fb.comment && <p className="mt-2 text-slate-300">{fb.comment}</p>}
                                               </div>
-                                              <span className="text-slate-500 text-xs">{new Date(fb.created_at).toLocaleString()}</span>
+                                              <span className="text-ink-muted text-[12px]">{new Date(fb.created_at).toLocaleString()}</span>
                                             </div>
                                           ))}
                                         </div>
@@ -374,14 +389,14 @@ export default function AnalystView() {
                                   </div>
                                   
                                   {/* Right Col: Provide Feedback */}
-                                  <div className="bg-white/5 border border-white/10 rounded-xl p-5 self-start sticky top-6">
-                                    <h3 className="font-semibold text-slate-200 mb-4">Analyst Verdict</h3>
-                                    <p className="text-xs text-slate-400 mb-4">
+                                  <div className="bg-surface border border-hairline rounded-[6px] p-5 self-start sticky top-6">
+                                    <h3 className="font-semibold text-white mb-4">Analyst Verdict</h3>
+                                    <p className="text-[12px] text-ink-muted mb-4">
                                       Classify this event based on your investigation. This feedback will inform future risk models.
                                     </p>
                                     
                                     <textarea
-                                      className="w-full text-sm border-white/10 bg-black/20 text-slate-200 rounded-lg p-3 min-h-[80px] mb-4 focus:ring-amber-500 placeholder:text-slate-600 shadow-inner"
+                                      className="w-full text-[14px] border border-hairline bg-[#1f1f1f] text-white rounded-[6px] p-3 min-h-[80px] mb-4 focus:ring-1 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 placeholder:text-slate-600 shadow-sm transition-colors"
                                       placeholder="Add investigation notes..."
                                       value={feedbackNotes}
                                       onChange={(e) => setFeedbackNotes(e.target.value)}
@@ -390,7 +405,7 @@ export default function AnalystView() {
                                     <div className="space-y-2">
                                       <Button 
                                         variant="outline" 
-                                        className="w-full justify-start border-blue-500/20 hover:bg-blue-500/10 text-blue-400 bg-transparent"
+                                        className="w-full justify-start text-emerald-400 border-hairline bg-transparent hover:bg-[#1f1f1f]"
                                         onClick={() => submitFeedback(FeedbackClassification.FALSE_POSITIVE)}
                                         disabled={submitting}
                                       >
@@ -398,7 +413,7 @@ export default function AnalystView() {
                                       </Button>
                                       <Button 
                                         variant="outline" 
-                                        className="w-full justify-start border-red-500/20 hover:bg-red-500/10 text-red-400 bg-transparent"
+                                        className="w-full justify-start text-red-500 border-hairline bg-transparent hover:bg-[#1f1f1f]"
                                         onClick={() => submitFeedback(FeedbackClassification.CONFIRMED_FRAUD)}
                                         disabled={submitting}
                                       >
@@ -406,7 +421,7 @@ export default function AnalystView() {
                                       </Button>
                                       <Button 
                                         variant="outline" 
-                                        className="w-full justify-start border-emerald-500/20 hover:bg-emerald-500/10 text-emerald-400 bg-transparent"
+                                        className="w-full justify-start text-emerald-500 border-hairline bg-transparent hover:bg-[#1f1f1f]"
                                         onClick={() => submitFeedback(FeedbackClassification.LEGITIMATE)}
                                         disabled={submitting}
                                       >
@@ -414,7 +429,7 @@ export default function AnalystView() {
                                       </Button>
                                       <Button 
                                         variant="outline" 
-                                        className="w-full justify-start border-amber-500/20 hover:bg-amber-500/10 text-amber-400 bg-transparent"
+                                        className="w-full justify-start text-amber-500 border-hairline bg-transparent hover:bg-[#1f1f1f]"
                                         onClick={() => submitFeedback(FeedbackClassification.UNCERTAIN)}
                                         disabled={submitting}
                                       >

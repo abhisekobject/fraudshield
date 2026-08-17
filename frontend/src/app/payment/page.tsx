@@ -7,10 +7,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Badge } from "../../components/ui/Badge";
-import { RiskScore } from "../../components/risk/RiskScore";
+import { RiskGauge } from "../../components/risk/RiskGauge";
 import { SignalBreakdown } from "../../components/risk/SignalBreakdown";
 import { InterventionPanel } from "../../components/risk/InterventionPanel";
-import { Loader2, ArrowRight, ShieldCheck, ShieldAlert, Dices } from "lucide-react";
+import { Loader2, Send, BadgeCheck, FileWarning, Shuffle, ScanLine } from "lucide-react";
+import { TileIcon } from "../../components/ui/TileIcon";
 
 import { DEMO_SCENARIOS, DemoScenario } from "../../utils/scenarios";
 
@@ -71,22 +72,22 @@ export default function PaymentSimulator() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-500 max-w-[1280px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div className="flex-1">
-          <h1 className="text-4xl font-bold tracking-tight text-white">Payment Simulator</h1>
-          <p className="text-slate-400 mt-2 text-lg">
-            Initiate a payment and observe the FraudShield Risk Fusion pipeline in real-time.
-          </p>
+          <h1 className="text-[36px] font-display font-bold tracking-tight flex items-center gap-3 text-white">
+            <TileIcon icon={ScanLine} className="w-16 h-16 bg-white" iconClassName="w-10 h-10 text-blue-500" />
+            Payment Simulator
+          </h1>
         </div>
         <div className="flex-1 max-w-md">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400 mb-3">Demo Scenarios</h3>
+          <h3 className="text-[12px] font-semibold uppercase tracking-wider text-ink-muted mb-3">Demo Scenarios</h3>
           <div className="flex flex-wrap gap-2">
             {DEMO_SCENARIOS.map((scenario) => (
               <Badge 
                 key={scenario.id}
                 variant={activeScenario?.id === scenario.id ? "default" : "outline"} 
-                className={`cursor-pointer hover:bg-white/10 transition-colors`}
+                className={`cursor-pointer transition-colors rounded-full px-3 py-1 ${activeScenario?.id === scenario.id ? 'bg-white text-black hover:bg-white/90' : 'hover:bg-[#1f1f1f] text-ink-muted'}`}
                 onClick={() => loadScenario(scenario)}
               >
                 {scenario.name}
@@ -94,10 +95,10 @@ export default function PaymentSimulator() {
             ))}
           </div>
           {activeScenario && (
-            <div className="mt-4 p-4 bg-[#141414] rounded-md text-sm text-slate-300 border border-[#2a2a2a] shadow-lg">
-              <p className="font-semibold text-white mb-2">{activeScenario.name} Expected Behavior:</p>
+            <div className="mt-4 p-4 bg-surface rounded-[8px] text-sm text-ink-muted border border-hairline shadow-sm">
+              <p className="font-semibold text-white mb-2">{activeScenario.name}</p>
               <p className="leading-relaxed">{activeScenario.description}</p>
-              <p className="mt-3 text-xs text-slate-500">Expected Risk: <strong className="text-slate-300">{activeScenario.expectedResult.level}</strong></p>
+              <p className="mt-3 text-[12px] text-ink-muted">Expected Risk: <strong className="text-white">{activeScenario.expectedResult.level}</strong></p>
             </div>
           )}
         </div>
@@ -106,46 +107,49 @@ export default function PaymentSimulator() {
       <div className="grid md:grid-cols-[1fr_2fr] gap-8">
         
         {/* Left Column: Form */}
-        <Card className="h-fit">
+        <Card className="h-fit bg-surface">
           <CardHeader>
-            <CardTitle>Transaction Details</CardTitle>
+            <CardTitle className="text-white">Transaction Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-300">Amount (INR)</label>
-                <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} required />
+                <label className="text-sm font-medium text-white">Amount (INR)</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-ink-muted">₹</span>
+                  <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} required className="pl-8 font-mono text-base bg-paper border-hairline text-white focus:border-emerald-500" />
+                </div>
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-300">User ID</label>
-                <Input value={userId} onChange={e => setUserId(e.target.value)} required />
+                <label className="text-sm font-medium text-white">User ID</label>
+                <Input value={userId} onChange={e => setUserId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-300">Device Fingerprint</label>
-                <Input value={deviceId} onChange={e => setDeviceId(e.target.value)} required />
+                <label className="text-sm font-medium text-white">Device Fingerprint</label>
+                <Input value={deviceId} onChange={e => setDeviceId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium text-slate-300">Recipient ID</label>
-                <Input value={recipientId} onChange={e => setRecipientId(e.target.value)} required />
+                <label className="text-sm font-medium text-white">Recipient ID</label>
+                <Input value={recipientId} onChange={e => setRecipientId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
               </div>
 
-              <div className="pt-6 border-t border-white/5">
+              <div className="pt-6 border-t border-hairline">
                 <div className="flex items-center gap-3 mb-3">
-                  <input type="checkbox" id="context" checked={includeContext} onChange={e => setIncludeContext(e.target.checked)} className="rounded border-white/10 bg-black/20 text-emerald-500 focus:ring-emerald-500/50 w-4 h-4" />
-                  <label htmlFor="context" className="text-sm font-medium text-slate-300 cursor-pointer">Simulate Interaction Context</label>
+                  <input type="checkbox" id="context" checked={includeContext} onChange={e => setIncludeContext(e.target.checked)} className="rounded border-hairline bg-paper text-emerald-500 focus:ring-emerald-500 w-4 h-4 cursor-pointer" />
+                  <label htmlFor="context" className="text-sm font-medium text-white cursor-pointer">Simulate Interaction Context</label>
                 </div>
                 {includeContext && (
                   <textarea 
-                    className="w-full h-28 rounded-md border border-[#333] bg-[#0a0a0a] p-3 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-slate-300 focus:border-slate-300 transition-all placeholder:text-slate-600 shadow-inner" 
+                    className="w-full h-28 rounded-[6px] border border-hairline bg-paper p-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors placeholder:text-slate-700 shadow-inner" 
                     placeholder="Enter synthetic interaction transcript..."
                     value={transcript}
                     onChange={e => setTranscript(e.target.value)}
                   />
                 )}
                 {includeContext && (
-                  <p className="text-xs text-slate-500 mt-2 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> Transcript processed locally for demonstration.
-                  </p>
+                  <div className="text-[12px] text-ink-muted mt-2 flex items-center gap-1.5">
+                    <TileIcon icon={BadgeCheck} className="w-5 h-5 p-0.5" iconClassName="w-3.5 h-3.5" /> Transcript processed locally for demonstration.
+                  </div>
                 )}
               </div>
 
@@ -154,17 +158,17 @@ export default function PaymentSimulator() {
                   type="button" 
                   variant="outline"
                   disabled={loading} 
-                  className="w-1/2 flex gap-2"
+                  className="w-1/2 flex gap-2 bg-transparent border-hairline text-white hover:bg-[#1f1f1f]"
                   onClick={() => {
                     const randomScenario = DEMO_SCENARIOS[Math.floor(Math.random() * DEMO_SCENARIOS.length)];
                     loadScenario(randomScenario);
                   }}
                 >
-                  <Dices className="w-4 h-4" />
+                  <Shuffle className="w-4 h-4" />
                   Randomize Values
                 </Button>
-                <Button type="submit" disabled={loading} className="w-1/2 flex gap-2">
-                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+                <Button type="submit" disabled={loading} className="w-1/2 flex gap-2 bg-blue-500 hover:bg-blue-600 text-white border-0">
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   Analyze & Continue
                 </Button>
               </div>
@@ -175,30 +179,28 @@ export default function PaymentSimulator() {
         {/* Right Column: Results */}
         <div className="space-y-6">
           {error && (
-            <Card className="border-red-500/30 bg-red-500/5">
+            <Card className="border-red-500/30 bg-[#1f0f0f]">
               <CardContent className="pt-6 text-red-400">
-                <h3 className="font-semibold mb-1 text-red-300">Analysis Failed</h3>
+                <h3 className="font-semibold mb-1 text-red-400">Analysis Failed</h3>
                 <p className="text-sm">{error}</p>
               </CardContent>
             </Card>
           )}
 
           {!response && !loading && !error && (
-            <div className="h-full min-h-[400px] border border-dashed border-[#333] bg-[#0a0a0a] rounded-md flex flex-col items-center justify-center text-slate-500 p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-[#141414] flex items-center justify-center mb-4">
-                <ShieldAlert className="w-8 h-8 opacity-50" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-300">Waiting for transaction</h3>
-              <p className="text-sm mt-2 max-w-sm leading-relaxed">
+            <div className="h-full min-h-[400px] border border-dashed border-hairline bg-paper rounded-[8px] flex flex-col items-center justify-center text-ink-muted p-8 text-center">
+              <TileIcon icon={FileWarning} className="w-12 h-12 mb-4" iconClassName="w-6 h-6" />
+              <h3 className="text-lg font-medium text-white">Waiting for transaction</h3>
+              <p className="text-sm mt-2 max-w-sm leading-relaxed text-slate-500">
                 Initiate a payment on the left to observe the multi-signal risk analysis and fusion process.
               </p>
             </div>
           )}
 
           {loading && (
-            <div className="h-full min-h-[300px] rounded-xl flex flex-col items-center justify-center text-emerald-600">
-               <Loader2 className="w-12 h-12 animate-spin mb-4" />
-               <p className="font-medium animate-pulse">Running Intelligence Pipeline...</p>
+            <div className="h-full min-h-[300px] rounded-[8px] flex flex-col items-center justify-center text-emerald-500">
+               <Loader2 className="w-[48px] h-[48px] animate-spin mb-4" />
+               <p className="font-medium animate-pulse text-emerald-400 text-lg">Running Intelligence Pipeline...</p>
             </div>
           )}
 
@@ -206,23 +208,23 @@ export default function PaymentSimulator() {
             <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
               
               {/* Header Score & Decision */}
-              <Card>
+              <Card className="bg-surface">
                 <CardContent className="pt-6 grid md:grid-cols-[1fr_2fr] gap-6 items-center">
-                  <RiskScore 
+                  <RiskGauge 
                     score={response.risk_evaluation.final_risk_score} 
                     level={response.risk_evaluation.risk_level} 
                   />
                   <div>
                     <div className="mb-2">
-                      <span className="text-xs uppercase tracking-widest font-semibold text-slate-500">Risk Decision</span>
-                      <h2 className="text-3xl font-bold mt-1 text-white">
+                      <span className="text-[12px] uppercase tracking-widest font-semibold text-ink-muted">Risk Decision</span>
+                      <h2 className="text-[32px] font-display font-bold mt-1 text-white">
                         {response.risk_evaluation.risk_level} Risk
                       </h2>
                     </div>
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      <Badge variant="outline">Engine: {response.risk_evaluation.evaluation_version}</Badge>
-                      <Badge variant="outline">Status: {response.transaction.status}</Badge>
-                      <Badge variant="outline">ID: {response.transaction.id.substring(0,8)}</Badge>
+                    <div className="flex flex-wrap gap-2 mt-4 font-mono">
+                      <Badge variant="outline" className="border-hairline text-slate-400 bg-transparent rounded-[4px]">Engine: {response.risk_evaluation.evaluation_version}</Badge>
+                      <Badge variant="outline" className="border-hairline text-slate-400 bg-transparent rounded-[4px]">Status: {response.transaction.status}</Badge>
+                      <Badge variant="outline" className="border-hairline text-slate-400 bg-transparent rounded-[4px]">ID: {response.transaction.id.substring(0,8)}</Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -230,13 +232,13 @@ export default function PaymentSimulator() {
 
               {/* Signal Breakdown */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-white">Multi-Signal Intelligence</h3>
+                <h3 className="text-[20px] font-semibold mb-4 text-white">Multi-Signal Intelligence</h3>
                 <SignalBreakdown evaluation={response.risk_evaluation} />
               </div>
 
               {/* Intervention Action */}
               <div>
-                <h3 className="text-lg font-semibold mb-4 text-white">Intervention Protocol</h3>
+                <h3 className="text-[20px] font-semibold mb-4 text-white">Intervention Protocol</h3>
                 <InterventionPanel 
                   evaluation={response.risk_evaluation}
                   onConfirm={async () => { await api.confirmPayment(response.transaction.id) }}

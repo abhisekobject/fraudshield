@@ -2,21 +2,22 @@ import * as React from "react"
 import { cn } from "../../utils/cn"
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "secondary" | "destructive" | "outline" | "success" | "warning";
+  variant?: "default" | "secondary" | "outline" | "low" | "medium" | "high" | "critical";
 }
 
 function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-md border px-3 py-1 text-xs font-semibold transition-colors focus:outline-none focus:ring-1 focus:ring-slate-300",
+        "inline-flex items-center rounded-[3px] border px-2 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-1 focus:ring-accent-interactive",
         {
-          "border-[#444] bg-[#2a2a2a] text-slate-200 hover:bg-[#333]": variant === "default",
-          "border-[#333] bg-[#1a1a1a] text-slate-300 hover:bg-[#222]": variant === "secondary",
-          "border-red-900 bg-[#2a0808] text-red-400": variant === "destructive",
-          "border-emerald-900 bg-[#082a18] text-emerald-400": variant === "success",
-          "border-amber-900 bg-[#2a1e08] text-amber-400": variant === "warning",
-          "text-slate-300 border-[#444]": variant === "outline",
+          "border-transparent bg-ink text-surface hover:bg-ink/80": variant === "default",
+          "border-transparent bg-surface text-ink hover:bg-black/5": variant === "secondary",
+          "border-risk-low text-risk-low bg-risk-low-bg": variant === "low",
+          "border-risk-medium text-risk-medium bg-risk-medium-bg": variant === "medium",
+          "border-risk-high text-risk-high bg-risk-high-bg": variant === "high",
+          "border-risk-critical text-risk-critical bg-risk-critical-bg": variant === "critical",
+          "text-ink border-hairline bg-transparent": variant === "outline",
         },
         className
       )}
