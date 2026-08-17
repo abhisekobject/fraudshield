@@ -4,7 +4,8 @@ import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { HealthResponse } from "../types";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
-import { Activity, Brain, Server, Shield, Loader2, AlertCircle, CreditCard, Mic } from "lucide-react";
+import { DatabaseZap, ListTree, Network, MessageSquareWarning, Loader2, AlertCircle, ScanLine, AudioLines, Radar } from "lucide-react";
+import { TileIcon } from "../components/ui/TileIcon";
 import Link from "next/link";
 
 export default function Dashboard() {
@@ -29,8 +30,10 @@ export default function Dashboard() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
-        <h1 className="text-4xl font-bold tracking-tight text-white">System Dashboard</h1>
-        <p className="text-slate-400 mt-2 text-lg">Real-time status of the FraudShield intelligence engines.</p>
+        <h1 className="text-[36px] font-display font-bold tracking-tight flex items-center gap-3 text-white">
+          <TileIcon icon={Radar} className="w-16 h-16 bg-white" iconClassName="w-10 h-10 text-emerald-500" />
+          System Dashboard
+        </h1>
       </div>
 
       {loading && (
@@ -55,62 +58,62 @@ export default function Dashboard() {
       {health && (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
+            <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">Core API</CardTitle>
-                <Server className="h-4 w-4 text-slate-400" />
+                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">Core API</CardTitle>
+                <TileIcon icon={DatabaseZap} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">ONLINE</div>
-                <p className="text-xs text-slate-500 mt-1">v{health.version}</p>
+                <div className="text-[24px] font-bold text-white">ONLINE</div>
+                <p className="text-[12px] text-ink-muted mt-1">v{health.version}</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">Rule Engine</CardTitle>
-                <Activity className="h-4 w-4 text-emerald-400" />
+                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">Rule Engine</CardTitle>
+                <TileIcon icon={ListTree} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">ACTIVE</div>
-                <p className="text-xs text-slate-500 mt-1">Deterministic signals</p>
+                <div className="text-[24px] font-bold text-white">ACTIVE</div>
+                <p className="text-[12px] text-ink-muted mt-1">Deterministic signals</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">ML Engine</CardTitle>
-                <Brain className="h-4 w-4 text-amber-400" />
+                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">ML Engine</CardTitle>
+                <TileIcon icon={Network} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white uppercase">{health?.services?.ml_engine ?? "Unavailable"}</div>
-                <p className="text-xs text-slate-500 mt-1">Synthetic demonstration model</p>
+                <div className="text-[24px] font-bold text-white uppercase">{health?.services?.ml_engine ?? "Unavailable"}</div>
+                <p className="text-[12px] text-ink-muted mt-1">Synthetic demonstration model</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">NLP Intelligence</CardTitle>
-                <Shield className="h-4 w-4 text-blue-400" />
+                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">NLP Intelligence</CardTitle>
+                <TileIcon icon={MessageSquareWarning} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">ACTIVE</div>
-                <p className="text-xs text-slate-500 mt-1">Pattern analysis online</p>
+                <div className="text-[24px] font-bold text-white">ACTIVE</div>
+                <p className="text-[12px] text-ink-muted mt-1">Pattern analysis online</p>
               </CardContent>
             </Card>
           </div>
 
           <div className="mt-12">
-            <h2 className="text-xl font-semibold mb-6 text-white">Quick Actions</h2>
+            <h2 className="text-[20px] font-semibold mb-6 text-white">Quick Actions</h2>
             <div className="grid gap-6 md:grid-cols-2">
               <Link href="/payment" className="group">
-                <Card className="hover:border-[#444] hover:bg-[#1a1a1a] transition-all duration-300 cursor-pointer h-full">
+                <Card className="bg-surface transition-colors hover:bg-neutral-900 cursor-pointer h-full">
                   <CardContent className="pt-8 pb-8">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <CreditCard className="w-6 h-6 text-emerald-400" />
+                    <div className="mb-4 transition-transform group-hover:scale-110 w-fit">
+                      <TileIcon icon={ScanLine} className="w-12 h-12" iconClassName="w-6 h-6" />
                     </div>
-                    <h3 className="font-semibold text-xl text-white mb-2">Simulate Payment</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">
+                    <h3 className="font-semibold text-[20px] text-white mb-2">Simulate Payment</h3>
+                    <p className="text-ink-muted text-sm leading-relaxed">
                       Trigger the full Risk Fusion v2 pipeline by initiating a simulated payment.
                     </p>
                   </CardContent>
@@ -118,13 +121,13 @@ export default function Dashboard() {
               </Link>
 
               <Link href="/interaction" className="group">
-                <Card className="hover:border-[#444] hover:bg-[#1a1a1a] transition-all duration-300 cursor-pointer h-full">
+                <Card className="bg-surface transition-colors hover:bg-neutral-900 cursor-pointer h-full">
                   <CardContent className="pt-8 pb-8">
-                    <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <Mic className="w-6 h-6 text-blue-400" />
+                    <div className="mb-4 transition-transform group-hover:scale-110 w-fit">
+                      <TileIcon icon={AudioLines} className="w-12 h-12" iconClassName="w-6 h-6" />
                     </div>
-                    <h3 className="font-semibold text-xl text-white mb-2">Test NLP Analyzer</h3>
-                    <p className="text-slate-400 text-sm leading-relaxed">
+                    <h3 className="font-semibold text-[20px] text-white mb-2">Test NLP Analyzer</h3>
+                    <p className="text-ink-muted text-sm leading-relaxed">
                       Test the Social Engineering interaction intelligence in isolation.
                     </p>
                   </CardContent>

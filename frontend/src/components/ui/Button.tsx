@@ -13,17 +13,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-300 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-[4px] text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent-interactive disabled:pointer-events-none disabled:opacity-50",
           {
-            "bg-slate-100 text-slate-900 shadow-sm hover:bg-slate-200": variant === "default",
-            "bg-red-500 text-white shadow-sm hover:bg-red-600": variant === "destructive",
-            "border border-[#333] bg-transparent shadow-sm hover:bg-[#1a1a1a] hover:text-white text-slate-300": variant === "outline",
-            "bg-[#1a1a1a] text-white shadow-sm hover:bg-[#222]": variant === "secondary",
-            "hover:bg-[#1a1a1a] text-slate-300 hover:text-white": variant === "ghost",
-            "text-slate-300 underline-offset-4 hover:underline": variant === "link",
+            "bg-accent text-surface border border-accent/50 hover:bg-accent-interactive": variant === "default",
+            "bg-risk-critical text-surface border border-risk-critical/50 hover:opacity-90": variant === "destructive",
+            "border border-hairline bg-transparent hover:bg-black/5 text-ink": variant === "outline",
+            "bg-surface text-ink border border-hairline hover:bg-black/5": variant === "secondary",
+            "hover:bg-black/5 text-ink": variant === "ghost",
+            "text-accent-interactive underline-offset-4 hover:underline": variant === "link",
             "h-9 px-4 py-2": size === "default",
-            "h-8 rounded-md px-3 text-xs": size === "sm",
-            "h-10 rounded-md px-8": size === "lg",
+            "h-8 px-3 text-xs": size === "sm",
+            "h-10 px-8": size === "lg",
             "h-9 w-9": size === "icon",
           },
           className

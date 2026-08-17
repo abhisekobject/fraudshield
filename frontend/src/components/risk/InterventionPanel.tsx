@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { InterventionType, RiskEvaluation } from "../../types";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "../ui/Card";
 import { Button } from "../ui/Button";
-import { AlertTriangle, CheckCircle, ShieldAlert, ShieldX } from "lucide-react";
+import { TriangleAlert, BadgeCheck, ShieldOff, ShieldX } from "lucide-react";
+import { TileIcon } from "../ui/TileIcon";
 
 interface InterventionPanelProps {
   evaluation: RiskEvaluation;
@@ -20,9 +21,6 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
     try {
       await actionFn();
     } catch (e: unknown) {
-      // Swallow 409 Conflict / "Illegal state transition" errors gracefully.
-      // These occur because the backend already auto-transitioned the transaction
-      // (e.g., LOW risk is auto-COMPLETED). The action has already happened — treat as success.
       const message = e instanceof Error ? e.message : String(e);
       const isIdempotentError =
         message.includes("409") ||
@@ -38,24 +36,23 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
     }
   };
 
-  // Show a clean result card after any action is taken
   if (acted) {
     return (
-      <Card className="border-[#2a2a2a] bg-[#141414] rounded-md">
+      <Card className="bg-surface">
         <CardContent className="pt-6 text-center space-y-3">
           {actionType === "cancel" ? (
             <>
-              <ShieldX className="h-8 w-8 text-slate-400 mx-auto" />
-              <p className="text-sm font-semibold text-slate-300">Payment Cancelled</p>
-              <p className="text-xs text-slate-500">
+              <ShieldX className="h-8 w-8 text-slate-500 mx-auto" />
+              <p className="text-sm font-semibold text-white">Payment Cancelled</p>
+              <p className="text-[12px] text-ink-muted">
                 This transaction has been cancelled and flagged for the analyst review queue.
               </p>
             </>
           ) : (
             <>
-              <CheckCircle className="h-8 w-8 text-emerald-400 mx-auto" />
-              <p className="text-sm font-semibold text-emerald-300">Payment Completed</p>
-              <p className="text-xs text-slate-500">
+              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto" />
+              <p className="text-sm font-semibold text-emerald-400">Payment Completed</p>
+              <p className="text-[12px] text-ink-muted">
                 Transaction has been authorized and recorded. Check the Analyst view for details.
               </p>
             </>
@@ -67,28 +64,23 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
 
   const { intervention } = evaluation;
 
-  // ────────────────────────────────────────────────────────────────────────────
   // LOW RISK — PROCEED
-  // The backend auto-transitions to COMPLETED for LOW risk transactions.
-  // We must NOT call onConfirm() again (would cause 409 Conflict).
-  // Show a static informational card only.
-  // ────────────────────────────────────────────────────────────────────────────
   if (intervention === InterventionType.PROCEED) {
     return (
-      <Card className="border-[#2a2a2a] bg-[#141414] rounded-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-emerald-400 flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
+      <Card className="bg-surface">
+        <CardHeader className="pb-2 mb-4">
+          <CardTitle className="text-emerald-400 flex items-center gap-3 text-[16px]">
+            <TileIcon icon={BadgeCheck} className="bg-white" iconClassName="w-5 h-5 text-emerald-500" />
             Payment Authorized
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <p className="text-sm text-emerald-300/80">
+          <p className="text-[14px] text-white">
             All risk signals are within normal thresholds. This transaction has been automatically approved.
           </p>
-          <div className="bg-[#0a1a0f] border border-emerald-900 rounded-md p-3">
-            <p className="text-xs text-emerald-400 font-semibold">✓ Status: COMPLETED</p>
-            <p className="text-xs text-slate-500 mt-1">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-[4px] p-3">
+            <p className="text-[12px] text-emerald-400 font-semibold">✓ Status: COMPLETED</p>
+            <p className="text-[12px] text-ink-muted mt-1">
               No manual action required. Result logged in the Analyst review queue.
             </p>
           </div>
@@ -97,20 +89,18 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
   // MEDIUM RISK — WARNING
-  // ────────────────────────────────────────────────────────────────────────────
   if (intervention === InterventionType.WARNING) {
     return (
-      <Card className="border-[#2a2a2a] bg-[#141414] rounded-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-amber-400 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
+      <Card className="bg-surface">
+        <CardHeader className="pb-2 mb-4">
+          <CardTitle className="text-amber-400 flex items-center gap-3 text-[16px]">
+            <TileIcon icon={TriangleAlert} className="bg-white" iconClassName="w-5 h-5 text-amber-500" />
             Please Review This Payment
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-amber-300/80 mb-2">
+          <p className="text-[14px] text-white mb-2">
             FraudShield detected unusual activity. Are you sure you want to proceed?
           </p>
         </CardContent>
@@ -119,14 +109,14 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
             variant="outline"
             onClick={() => handleAction(onCancel, "cancel")}
             disabled={loading}
-            className="w-full bg-transparent text-slate-300 border-[#333] hover:bg-[#222]"
+            className="w-full bg-transparent border-hairline text-white hover:bg-[#1f1f1f]"
           >
             Cancel Payment
           </Button>
           <Button
             onClick={() => handleAction(onConfirm, "confirm")}
             disabled={loading}
-            className="w-full bg-amber-500 text-amber-950 hover:bg-amber-600"
+            className="w-full bg-amber-500 hover:bg-amber-600 text-black border-0 font-semibold"
           >
             Proceed Anyway
           </Button>
@@ -135,23 +125,21 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
   // HIGH RISK — STRONG WARNING
-  // ────────────────────────────────────────────────────────────────────────────
   if (intervention === InterventionType.STRONG_WARNING) {
     return (
-      <Card className="border-[#2a2a2a] bg-[#141414] rounded-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-orange-400 flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5" />
+      <Card className="bg-surface">
+        <CardHeader className="pb-2 mb-4">
+          <CardTitle className="text-orange-400 flex items-center gap-3 text-[16px]">
+            <TileIcon icon={ShieldOff} className="bg-white" iconClassName="w-5 h-5 text-orange-500" />
             Strong Warning
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-orange-300 font-medium mb-1">
+          <p className="text-[14px] text-white font-medium mb-1">
             This payment may involve suspicious behavior.
           </p>
-          <p className="text-sm text-orange-300/80">
+          <p className="text-[14px] text-ink-muted">
             Recommended action: Verify the request through an official channel before proceeding.
           </p>
         </CardContent>
@@ -160,14 +148,14 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
             variant="outline"
             onClick={() => handleAction(onCancel, "cancel")}
             disabled={loading}
-            className="w-full bg-transparent text-slate-300 border-[#333] hover:bg-[#222]"
+            className="w-full bg-transparent border-hairline text-white hover:bg-[#1f1f1f]"
           >
             Cancel Payment
           </Button>
           <Button
             onClick={() => handleAction(onConfirm, "confirm")}
             disabled={loading}
-            className="w-full bg-orange-500 text-orange-950 hover:bg-orange-600"
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white border-0 font-semibold"
           >
             Continue Anyway
           </Button>
@@ -176,22 +164,20 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
     );
   }
 
-  // ────────────────────────────────────────────────────────────────────────────
   // CRITICAL RISK — VERIFICATION REQUIRED
-  // ────────────────────────────────────────────────────────────────────────────
   return (
-    <Card className="border-[#2a2a2a] bg-[#141414] rounded-md">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-red-400 flex items-center gap-2">
-          <ShieldX className="h-5 w-5" />
+    <Card className="bg-surface">
+      <CardHeader className="pb-2 mb-4">
+        <CardTitle className="text-red-500 flex items-center gap-3 text-[16px]">
+          <TileIcon icon={ShieldX} className="bg-white" iconClassName="w-5 h-5 text-red-500" />
           Verification Required
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-red-300 font-medium mb-1">
+        <p className="text-[14px] text-red-400 font-medium mb-1">
           Multiple high-risk indicators were detected.
         </p>
-        <p className="text-sm text-red-300/80">
+        <p className="text-[14px] text-ink-muted">
           Do not share OTP, UPI PIN, passwords, or grant remote access. Please open your official
           banking application to verify this request securely.
         </p>
@@ -200,16 +186,16 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
         <Button
           onClick={() => handleAction(onCancel, "cancel")}
           disabled={loading}
-          className="w-full bg-red-500 text-white hover:bg-red-600"
+          variant="destructive"
+          className="w-full bg-red-600 hover:bg-red-700 text-white border-0 font-semibold"
         >
           Cancel Payment
         </Button>
-        {/* Allow confirmation override to demonstrate the Legitimate Override scenario */}
         <Button
           variant="ghost"
           onClick={() => handleAction(onConfirm, "confirm")}
           disabled={loading}
-          className="w-full text-red-400 hover:bg-[#1a1a1a] hover:text-red-300 text-xs"
+          className="w-full text-red-400 text-xs hover:text-red-300 hover:bg-red-500/10"
         >
           I understand the risks. Proceed anyway.
         </Button>

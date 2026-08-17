@@ -50,9 +50,8 @@ from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
     CheckConstraint, DateTime, ForeignKey, Index,
-    Numeric, String, UniqueConstraint
+    Numeric, String, UniqueConstraint, Uuid
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database.session import Base
@@ -95,21 +94,21 @@ class Transaction(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
     # --- Foreign keys -------------------------------------------------------
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
         comment="User who initiated this payment",
     )
 
     recipient_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("recipients.id", ondelete="RESTRICT"),
         nullable=False,
         comment="Intended recipient of this payment",
     )
 
     device_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("devices.id", ondelete="RESTRICT"),
         nullable=False,
         comment="Device from which this payment was initiated",

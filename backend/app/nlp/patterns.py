@@ -52,7 +52,6 @@ INDICATOR_PATTERNS = [
             # Generic bank impersonation — catches "calling from Axis bank",
             # "calling from SBI", "calling from your bank", etc.
             r"calling from (?:the |your |a )?(?:\w+ )?bank",
-            r"i am calling from",
             r"this is (?:a |an )?(?:call|message) from (?:the |your |a )?(?:\w+ )?bank",
             r"bank (?:manager|agent|executive|representative|helpline|customer care|customer service)",
             r"(?:axis|hdfc|sbi|icici|kotak|pnb|bob|idbi|yes|indusind|canara|union) bank",

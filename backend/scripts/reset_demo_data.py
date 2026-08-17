@@ -63,24 +63,30 @@ from app.database.models.enums import FeedbackClassification  # noqa: E402
 # ---------------------------------------------------------------------------
 
 USER_001_ID   = uuid.UUID("a0000000-0000-0000-0000-000000000001")
+USER_CLEAN_ID = uuid.UUID("c0000000-0000-0000-0000-000000000001")  # Isolated LOW-risk demo user
 
 DEV_TRUSTED   = uuid.UUID("a0000000-0000-0000-0000-000000000010")
 DEV_NEW       = uuid.UUID("a0000000-0000-0000-0000-000000000011")
 DEV_UNTRUSTED = uuid.UUID("a0000000-0000-0000-0000-000000000012")
+DEV_CLEAN     = uuid.UUID("c0000000-0000-0000-0000-000000000010")  # Trusted device for clean user
 
 REC_TRUSTED   = uuid.UUID("a0000000-0000-0000-0000-000000000020")
 REC_NEW_001   = uuid.UUID("a0000000-0000-0000-0000-000000000021")
 REC_NEW_002   = uuid.UUID("a0000000-0000-0000-0000-000000000022")
+REC_CLEAN     = uuid.UUID("c0000000-0000-0000-0000-000000000020")  # Trusted recipient for clean user
 
 # Public reference maps for convenience
 DEMO_IDS = {
     "user_id":          str(USER_001_ID),
+    "user_clean":       str(USER_CLEAN_ID),
     "dev_trusted":      str(DEV_TRUSTED),
     "dev_new":          str(DEV_NEW),
     "dev_untrusted":    str(DEV_UNTRUSTED),
+    "dev_clean":        str(DEV_CLEAN),
     "rec_trusted":      str(REC_TRUSTED),
     "rec_new_001":      str(REC_NEW_001),
     "rec_new_002":      str(REC_NEW_002),
+    "rec_clean":        str(REC_CLEAN),
 }
 
 
@@ -95,16 +101,23 @@ def reset_db() -> None:
 
 def seed_entities(db) -> None:
     """Seed the base entities: user, devices, recipients using raw SQL for SQLite compatibility."""
-    now = datetime.now(timezone.utc).isoformat()
-    past_90  = (datetime.now(timezone.utc) - timedelta(days=90)).isoformat()
-    past_180 = (datetime.now(timezone.utc) - timedelta(days=180)).isoformat()
+    # Use naive UTC strings to match SQLAlchemy's SQLite datetime format.
+    def _ts(dt: datetime) -> str:
+        """Strip timezone info and return a string SQLite can compare with ORM-inserted values."""
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+
+    now = datetime.now(timezone.utc)
+    past_90  = now - timedelta(days=90)
+    past_180 = now - timedelta(days=180)
 
     db.execute(text("""
         INSERT INTO users (id, name, email, is_active, created_at, updated_at)
         VALUES (:id, :name, :email, TRUE, :created_at, :updated_at)
     """), {"id": USER_001_ID.hex, "name": "Demo User 001",
            "email": "demo_user_001@fraudshield.poc",
-           "created_at": now, "updated_at": now})
+           "created_at": _ts(now), "updated_at": _ts(now)})
 
     for dev_id, fingerprint, is_trusted, first_seen in [
     (DEV_TRUSTED.hex,   "dev_trusted_001",   True, past_90),
@@ -119,10 +132,10 @@ def seed_entities(db) -> None:
     "uid": USER_001_ID.hex,
     "fp": fingerprint,
     "trusted": is_trusted,
-    "first": first_seen,
-    "last": now,
-    "ca": now,
-    "ua": now
+    "first": _ts(first_seen),
+    "last": _ts(now),
+    "ca": _ts(now),
+    "ua": _ts(now)
 })
 
     for rec_id, identifier, first_seen, tx_count, is_trusted_rec in [
@@ -135,7 +148,30 @@ def seed_entities(db) -> None:
     VALUES (:id, :uid, :identifier, :is_trusted, :first, :tx_count, :ca, :ua)
 """), {"id": rec_id, "uid": USER_001_ID.hex, "identifier": identifier,
        "is_trusted": is_trusted_rec,
-       "first": first_seen, "tx_count": tx_count, "ca": now, "ua": now})
+       "first": _ts(first_seen), "tx_count": tx_count, "ca": _ts(now), "ua": _ts(now)})
+
+    # --- Clean isolated user for Normal Payment (LOW-risk) scenario ---
+    # Uses c0000000-... UUIDs; has no velocity history so it reliably shows LOW risk.
+    db.execute(text("""
+        INSERT INTO users (id, name, email, is_active, created_at, updated_at)
+        VALUES (:id, :name, :email, TRUE, :created_at, :updated_at)
+    """), {"id": USER_CLEAN_ID.hex, "name": "Demo User Clean",
+           "email": "demo_user_clean@fraudshield.poc",
+           "created_at": _ts(now), "updated_at": _ts(now)})
+
+    db.execute(text("""
+        INSERT INTO devices (id, user_id, device_fingerprint, is_trusted, first_seen_at, last_seen_at, created_at, updated_at)
+        VALUES (:id, :uid, :fp, TRUE, :first, :last, :ca, :ua)
+    """), {"id": DEV_CLEAN.hex, "uid": USER_CLEAN_ID.hex,
+           "fp": "dev_clean_trusted", "first": _ts(past_90), "last": _ts(now),
+           "ca": _ts(now), "ua": _ts(now)})
+
+    db.execute(text("""
+        INSERT INTO recipients (id, user_id, recipient_identifier, is_trusted, first_seen_at, transaction_count, created_at, updated_at)
+        VALUES (:id, :uid, :identifier, TRUE, :first, 10, :ca, :ua)
+    """), {"id": REC_CLEAN.hex, "uid": USER_CLEAN_ID.hex,
+           "identifier": "rec_clean_001@upi",
+           "first": _ts(past_180), "ca": _ts(now), "ua": _ts(now)})
 
     db.commit()
     print("  [Seed] Base entities seeded.")
@@ -148,8 +184,14 @@ def seed_historical_transactions(db) -> None:
       2. Amount baseline: avg ≈ ₹1,300. Anomaly (>3x) fires at ~₹3,900+.
       3. Velocity context: 4 recent transactions to prime velocity scenario.
 
-    Uses raw SQL for SQLite/PostgreSQL UUID compatibility.
+    All timestamps are stored as naive UTC strings to match ORM-inserted values
+    and ensure correct string comparison in SQLite velocity/history queries.
     """
+    def _ts(dt: datetime) -> str:
+        if dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt.strftime("%Y-%m-%d %H:%M:%S.%f")
+
     now = datetime.now(timezone.utc)
 
     # --- Baseline COMPLETED transactions (old, to establish baseline avg) ---
@@ -157,7 +199,7 @@ def seed_historical_transactions(db) -> None:
     baseline_amounts = [1000, 1500, 2000, 800, 1200]
     for i, amt in enumerate(baseline_amounts):
         tx_id = uuid.UUID(f"a0000000-0000-0000-0001-{i+1:012d}").hex
-        ts = (now - timedelta(days=30 - i)).isoformat()
+        ts = _ts(now - timedelta(days=30 - i))
         db.execute(text("""
             INSERT INTO transactions
               (id, user_id, recipient_id, device_id, amount, currency, transaction_type, status, initiated_at, completed_at, created_at, updated_at)
@@ -170,7 +212,7 @@ def seed_historical_transactions(db) -> None:
     # These prime the velocity scenario: 4 transactions in last 8 mins
     for i in range(4):
         tx_id = uuid.UUID(f"a0000000-0000-0000-0002-{i+1:012d}").hex
-        ts = (now - timedelta(minutes=8 - i * 2)).isoformat()
+        ts = _ts(now - timedelta(minutes=8 - i * 2))
         db.execute(text("""
             INSERT INTO transactions
               (id, user_id, recipient_id, device_id, amount, currency, transaction_type, status, initiated_at, completed_at, created_at, updated_at)
@@ -181,6 +223,24 @@ def seed_historical_transactions(db) -> None:
 
     db.commit()
     print("  [Seed] Historical transactions seeded (avg ≈ ₹1,300, 4 recent velocity txns).")
+
+    # --- Clean user historical transactions (OLD, non-recent) ---
+    # These give the clean user a device and recipient with completed tx history,
+    # so NEW_DEVICE and NEW_RECIPIENT rules do NOT fire on the Normal Payment demo.
+    clean_amounts = [400, 600, 500, 450, 550]  # avg ≈ 500, well within normal range
+    for i, amt in enumerate(clean_amounts):
+        tx_id = uuid.UUID(f"c0000000-0000-0000-0001-{i+1:012d}").hex
+        ts = _ts(now - timedelta(days=60 - i))  # 55–60 days ago, far from velocity window
+        db.execute(text("""
+            INSERT INTO transactions
+              (id, user_id, recipient_id, device_id, amount, currency, transaction_type, status, initiated_at, completed_at, created_at, updated_at)
+            VALUES
+              (:id, :uid, :rid, :did, :amt, 'INR', 'UPI_SEND', 'COMPLETED', :ts, :ts, :ts, :ts)
+        """), {"id": tx_id, "uid": USER_CLEAN_ID.hex, "rid": REC_CLEAN.hex,
+               "did": DEV_CLEAN.hex, "amt": str(amt), "ts": ts})
+
+    db.commit()
+    print("  [Seed] Clean user historical transactions seeded.")
 
 
 def create_demo_scenario_events(client) -> None:
