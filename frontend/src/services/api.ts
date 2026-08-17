@@ -147,5 +147,10 @@ export const api = {
       body: JSON.stringify({ label: classification, notes }),
     });
     return handleResponse<FeedbackResponse>(res);
-  }
+  },
+
+  async resetSession(): Promise<{ status: string; message: string; cleared: { transactions: number; risk_events: number } }> {
+    const res = await fetch(`${API_BASE}/demo/reset-session`, { method: "POST" });
+    return handleResponse(res);
+  },
 };

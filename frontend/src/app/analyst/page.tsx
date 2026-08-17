@@ -148,7 +148,7 @@ export default function AnalystView() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Total Risk Events</p>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1">Total Risk Events</p>
               <h3 className="text-[32px] font-display font-bold text-white">{stats.total_events}</h3>
               <div className="flex gap-4 mt-2 text-[12px] text-ink-muted">
                 <span>{stats.reviewed_count} Reviewed</span>
@@ -159,7 +159,7 @@ export default function AnalystView() {
           
           <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">False Positives (Reported)</p>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1">False Positives (Reported)</p>
               <h3 className="text-[32px] font-display font-bold text-emerald-400">{stats.false_positive_count}</h3>
               <p className="mt-2 text-[12px] text-ink-muted">
                 {stats.false_positive_rate !== null ? `${(stats.false_positive_rate * 100).toFixed(1)}% of reviewed` : "N/A"}
@@ -169,14 +169,14 @@ export default function AnalystView() {
           
           <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Confirmed Fraud</p>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1">Confirmed Fraud</p>
               <h3 className="text-[32px] font-display font-bold text-red-500">{stats.true_positive_count}</h3>
             </CardContent>
           </Card>
 
           <Card className="bg-surface">
             <CardContent className="p-6">
-              <p className="text-[12px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Legitimate (True Negatives)</p>
+              <p className="text-[12px] font-semibold text-slate-400 mb-1">Legitimate (True Negatives)</p>
               <h3 className="text-[32px] font-display font-bold text-emerald-500">{stats.legitimate_count}</h3>
             </CardContent>
           </Card>
@@ -200,7 +200,7 @@ export default function AnalystView() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
-                <thead className="bg-[#1f1f1f] text-slate-400 font-medium border-b border-hairline text-[12px] uppercase tracking-wider">
+                <thead className="bg-[#1f1f1f] text-slate-400 font-medium border-b border-hairline text-[12px]">
                   <tr>
                     <th className="px-6 py-4">Event ID</th>
                     <th className="px-6 py-4">User</th>
@@ -297,7 +297,7 @@ export default function AnalystView() {
                                         </p>
                                         <div className="flex items-center gap-1.5 mt-2 text-emerald-500/70">
                                           <TileIcon icon={Fingerprint} className="p-0.5" iconClassName="w-3 h-3 text-emerald-400" />
-                                          <span className="text-[10px] uppercase tracking-wider">Status: Secured</span>
+                                          <span className="text-[10px]">Status: Secured</span>
                                         </div>
                                       </div>
                                     </div>
@@ -315,7 +315,7 @@ export default function AnalystView() {
                                                 <span className="font-mono text-[12px] font-semibold text-white bg-[#1f1f1f] px-2 py-1 rounded-[4px]">
                                                   {r.reason_code}
                                                 </span>
-                                                <span className={`text-[10px] uppercase font-bold tracking-wider ${
+                                                <span className={`text-[10px] font-bold ${
                                                   r.severity === 'CRITICAL' ? 'text-red-500' :
                                                   r.severity === 'HIGH' ? 'text-orange-500' :
                                                   'text-ink-muted'
@@ -327,13 +327,13 @@ export default function AnalystView() {
                                               {/* Phase B: Explainability Headers */}
                                               <div className="flex gap-4 mb-2 mt-1">
                                                 {r.source_engine && (
-                                                  <div className="text-[10px] uppercase tracking-wide text-ink-muted flex items-center gap-1">
+                                                  <div className="text-[10px] text-ink-muted flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
                                                     Engine: <span className="text-white">{r.source_engine}</span>
                                                   </div>
                                                 )}
                                                 {r.contribution !== undefined && r.contribution !== null && (
-                                                  <div className="text-[10px] uppercase tracking-wide text-ink-muted flex items-center gap-1">
+                                                  <div className="text-[10px] text-ink-muted flex items-center gap-1">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                                                     Impact: <span className="text-white">{(r.contribution * 100).toFixed(0)}%</span>
                                                   </div>

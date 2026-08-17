@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { api } from "../services/api";
 import { HealthResponse } from "../types";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/Card";
-import { DatabaseZap, ListTree, Network, MessageSquareWarning, Loader2, AlertCircle, ScanLine, AudioLines, Radar } from "lucide-react";
+import { DatabaseZap, ListTree, Network, MessageSquareWarning, Loader2, AlertCircle, ScanLine, AudioLines, Radar, FileCode2, BookOpen } from "lucide-react";
 import { TileIcon } from "../components/ui/TileIcon";
 import Link from "next/link";
 
@@ -57,47 +57,47 @@ export default function Dashboard() {
 
       {health && (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
             <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">Core API</CardTitle>
+                <CardTitle className="text-[12px] font-semibold text-ink-muted">Core API</CardTitle>
                 <TileIcon icon={DatabaseZap} />
               </CardHeader>
               <CardContent>
-                <div className="text-[24px] font-bold text-white">ONLINE</div>
+                <div className="text-[24px] font-bold text-emerald-500">Online</div>
                 <p className="text-[12px] text-ink-muted mt-1">v{health.version}</p>
               </CardContent>
             </Card>
 
             <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">Rule Engine</CardTitle>
+                <CardTitle className="text-[12px] font-semibold text-ink-muted">Rule Engine</CardTitle>
                 <TileIcon icon={ListTree} />
               </CardHeader>
               <CardContent>
-                <div className="text-[24px] font-bold text-white">ACTIVE</div>
+                <div className="text-[24px] font-bold text-emerald-500">Active</div>
                 <p className="text-[12px] text-ink-muted mt-1">Deterministic signals</p>
               </CardContent>
             </Card>
 
-            <Card className="bg-surface">
+            <Card className="bg-surface lg:col-span-2">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">ML Engine</CardTitle>
+                <CardTitle className="text-[12px] font-semibold text-ink-muted">ML Engine</CardTitle>
                 <TileIcon icon={Network} />
               </CardHeader>
               <CardContent>
-                <div className="text-[24px] font-bold text-white uppercase">{health?.services?.ml_engine ?? "Unavailable"}</div>
+                <div className="text-[24px] font-bold text-white capitalize whitespace-nowrap overflow-hidden text-ellipsis">{health?.services?.ml_engine ?? "Unavailable"}</div>
                 <p className="text-[12px] text-ink-muted mt-1">Synthetic demonstration model</p>
               </CardContent>
             </Card>
 
             <Card className="bg-surface">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[12px] uppercase tracking-wider font-semibold text-ink-muted">NLP Intelligence</CardTitle>
+                <CardTitle className="text-[12px] font-semibold text-ink-muted">NLP Intelligence</CardTitle>
                 <TileIcon icon={MessageSquareWarning} />
               </CardHeader>
               <CardContent>
-                <div className="text-[24px] font-bold text-white">ACTIVE</div>
+                <div className="text-[24px] font-bold text-emerald-500">Active</div>
                 <p className="text-[12px] text-ink-muted mt-1">Pattern analysis online</p>
               </CardContent>
             </Card>
@@ -130,6 +130,43 @@ export default function Dashboard() {
                     <p className="text-ink-muted text-sm leading-relaxed">
                       Test the Social Engineering interaction intelligence in isolation.
                     </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h2 className="text-[20px] font-semibold mb-6 text-white">API Documentation</h2>
+            <div className="grid gap-6 md:grid-cols-2">
+              <Link href="http://localhost:8000/api/docs" target="_blank" rel="noopener noreferrer" className="group">
+                <Card className="bg-surface transition-colors hover:bg-neutral-900 cursor-pointer h-full">
+                  <CardContent className="pt-8 pb-8 flex items-start gap-5">
+                    <div className="shrink-0 transition-transform group-hover:scale-110">
+                      <TileIcon icon={FileCode2} className="w-12 h-12" iconClassName="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-[18px] text-white mb-1">Swagger UI (Interactive)</h3>
+                      <p className="text-ink-muted text-sm leading-relaxed">
+                        Explore and test the FraudShield REST endpoints interactively via Swagger interface.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="http://localhost:8000/api/redoc" target="_blank" rel="noopener noreferrer" className="group">
+                <Card className="bg-surface transition-colors hover:bg-neutral-900 cursor-pointer h-full">
+                  <CardContent className="pt-8 pb-8 flex items-start gap-5">
+                    <div className="shrink-0 transition-transform group-hover:scale-110">
+                      <TileIcon icon={BookOpen} className="w-12 h-12" iconClassName="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-[18px] text-white mb-1">ReDoc (Reference)</h3>
+                      <p className="text-ink-muted text-sm leading-relaxed">
+                        View structured, readable API reference documentation for the risk engine endpoints.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
