@@ -90,10 +90,12 @@ def create_application() -> FastAPI:
     from app.api.routes.payments import router as payments_router
     from app.api.routes.interactions import router as interactions_router
     from app.api.routes.risk_events import router as risk_events_router
+    from app.api.routes.demo import router as demo_router
 
     application.include_router(payments_router, prefix="/api/v1/payments", tags=["payments"])
     application.include_router(interactions_router, prefix="/api/v1/interactions", tags=["interactions"])
     application.include_router(risk_events_router, prefix="/api/v1/risk-events", tags=["risk_events"])
+    application.include_router(demo_router, prefix="/api/v1/demo", tags=["demo"])
 
     return application
 

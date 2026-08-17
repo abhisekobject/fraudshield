@@ -31,9 +31,9 @@ export function SignalBreakdown({ evaluation }: SignalBreakdownProps) {
                 .map((rule, idx) => (
                   <div key={idx} className="text-sm border-b border-hairline py-3 last:border-0 flex items-start gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
-                    <div>
-                      <p className="font-mono text-white text-xs mb-1">{rule.reason_code}</p>
-                      <p className="text-ink-muted text-[12px] leading-relaxed">{rule.explanation}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-white text-[11px] mb-1 break-words">{rule.reason_code}</p>
+                      <p className="text-ink-muted text-[12px] leading-relaxed break-words">{rule.explanation}</p>
                     </div>
                   </div>
               ))
@@ -89,9 +89,9 @@ export function SignalBreakdown({ evaluation }: SignalBreakdownProps) {
                     .map((rule, idx) => (
                       <div key={idx} className="text-sm border-b border-hairline py-3 last:border-0 flex items-start gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 shrink-0" />
-                        <div>
-                          <p className="font-mono text-white text-xs mb-1">{rule.reason_code}</p>
-                          <p className="text-ink-muted text-[12px] leading-relaxed">{rule.explanation}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-mono text-white text-[11px] mb-1 break-words">{rule.reason_code}</p>
+                          <p className="text-ink-muted text-[12px] leading-relaxed break-words">{rule.explanation}</p>
                         </div>
                       </div>
                   ))

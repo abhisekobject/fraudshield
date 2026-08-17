@@ -180,7 +180,7 @@ export default function InteractionAnalyzer() {
 
     let finalText = transcript; // preserve existing transcript text
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event: any) => {
       let interimText = "";
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
@@ -198,7 +198,7 @@ export default function InteractionAnalyzer() {
       }
     };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognition.onerror = (event: any) => {
       if (event.error !== "aborted" && event.error !== "no-speech") {
         setError(`Microphone error: ${event.error}. Please allow microphone access.`);
       }
@@ -569,7 +569,7 @@ export default function InteractionAnalyzer() {
                               ? "bg-emerald-900/30 border border-emerald-500/30 text-emerald-100" 
                               : "bg-neutral-900 border border-neutral-800 text-white"
                           )}>
-                            <div className={cn("text-[10px] font-bold mb-0.5 uppercase tracking-wider", isVictim ? "text-emerald-400" : "text-slate-400")}>
+                            <div className={cn("text-[10px] font-bold mb-0.5 tracking-wider", isVictim ? "text-emerald-400" : "text-slate-400")}>
                               {isVictim ? "Victim" : "Caller"}
                             </div>
                             <p className="leading-snug">{content}</p>
@@ -648,7 +648,7 @@ export default function InteractionAnalyzer() {
                   Secured Transcript
                   {isEncrypting && <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" />}
                   {!isEncrypting && hashedOutput && (
-                    <span className="ml-auto text-[10px] font-normal bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-[4px] tracking-wider uppercase border border-emerald-500/30">
+                    <span className="ml-auto text-[10px] font-normal bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-[4px] tracking-wider border border-emerald-500/30">
                       ✓ Secured
                     </span>
                   )}
@@ -734,7 +734,7 @@ export default function InteractionAnalyzer() {
                       </p>
                     </div>
                     <Badge
-                      className={cn("px-3 py-1 text-[12px] uppercase rounded-[4px]",
+                      className={cn("px-3 py-1 text-[12px] rounded-[4px]",
                         result.risk_level === RiskLevel.LOW ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
                         result.risk_level === RiskLevel.CRITICAL ? "bg-red-500/20 text-red-500 border border-red-500/30" : 
                         result.risk_level === RiskLevel.HIGH ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"

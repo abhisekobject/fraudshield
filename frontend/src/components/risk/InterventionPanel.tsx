@@ -50,7 +50,7 @@ export function InterventionPanel({ evaluation, onConfirm, onCancel }: Intervent
             </>
           ) : (
             <>
-              <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto" />
+              <BadgeCheck className="h-8 w-8 text-emerald-500 mx-auto" />
               <p className="text-sm font-semibold text-emerald-400">Payment Completed</p>
               <p className="text-[12px] text-ink-muted">
                 Transaction has been authorized and recorded. Check the Analyst view for details.

@@ -81,7 +81,7 @@ export default function PaymentSimulator() {
           </h1>
         </div>
         <div className="flex-1 max-w-md">
-          <h3 className="text-[12px] font-semibold uppercase tracking-wider text-ink-muted mb-3">Demo Scenarios</h3>
+          <h3 className="text-[12px] font-semibold text-ink-muted mb-3">Demo Scenarios</h3>
           <div className="flex flex-wrap gap-2">
             {DEMO_SCENARIOS.map((scenario) => (
               <Badge 
@@ -113,24 +113,57 @@ export default function PaymentSimulator() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white">Amount (INR)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2 text-ink-muted">₹</span>
-                  <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} required className="pl-8 font-mono text-base bg-paper border-hairline text-white focus:border-emerald-500" />
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-white ml-2">Amount (INR)</label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-white font-medium z-10 pointer-events-none text-xs">₹</div>
+                    <Input 
+                      type="number" 
+                      value={amount} 
+                      onChange={e => setAmount(e.target.value)} 
+                      required 
+                      placeholder="Amount (INR)" 
+                      className="w-full h-[52px] pl-8 pr-4 text-xs tracking-tight bg-paper hover:bg-surface border border-white text-white focus:border-white focus:bg-surface rounded-full focus:ring-1 focus:ring-white/50 shadow-sm transition-all placeholder:text-slate-500 font-mono" 
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white">User ID</label>
-                <Input value={userId} onChange={e => setUserId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white">Device Fingerprint</label>
-                <Input value={deviceId} onChange={e => setDeviceId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
-              </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-white">Recipient ID</label>
-                <Input value={recipientId} onChange={e => setRecipientId(e.target.value)} required className="font-mono text-sm bg-paper border-hairline text-white focus:border-emerald-500" />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-white ml-2">User ID</label>
+                  <div className="relative">
+                    <Input 
+                      value={userId} 
+                      onChange={e => setUserId(e.target.value)} 
+                      required 
+                      placeholder="User ID" 
+                      className="w-full h-[52px] px-4 text-xs tracking-tight bg-paper hover:bg-surface border border-white text-white focus:border-white focus:bg-surface rounded-full focus:ring-1 focus:ring-white/50 shadow-sm transition-all placeholder:text-slate-500 font-mono" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-white ml-2">Device Fingerprint</label>
+                  <div className="relative">
+                    <Input 
+                      value={deviceId} 
+                      onChange={e => setDeviceId(e.target.value)} 
+                      required 
+                      placeholder="Device Fingerprint" 
+                      className="w-full h-[52px] px-4 text-xs tracking-tight bg-paper hover:bg-surface border border-white text-white focus:border-white focus:bg-surface rounded-full focus:ring-1 focus:ring-white/50 shadow-sm transition-all placeholder:text-slate-500 font-mono" 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-white ml-2">Recipient ID</label>
+                  <div className="relative">
+                    <Input 
+                      value={recipientId} 
+                      onChange={e => setRecipientId(e.target.value)} 
+                      required 
+                      placeholder="Recipient ID" 
+                      className="w-full h-[52px] px-4 text-xs tracking-tight bg-paper hover:bg-surface border border-white text-white focus:border-white focus:bg-surface rounded-full focus:ring-1 focus:ring-white/50 shadow-sm transition-all placeholder:text-slate-500 font-mono" 
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="pt-6 border-t border-hairline">
@@ -216,7 +249,7 @@ export default function PaymentSimulator() {
                   />
                   <div>
                     <div className="mb-2">
-                      <span className="text-[12px] uppercase tracking-widest font-semibold text-ink-muted">Risk Decision</span>
+                      <span className="text-[12px] font-semibold text-ink-muted">Risk Decision</span>
                       <h2 className="text-[32px] font-display font-bold mt-1 text-white">
                         {response.risk_evaluation.risk_level} Risk
                       </h2>
