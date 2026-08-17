@@ -58,7 +58,7 @@ export default function Dashboard() {
       {health && (
         <>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
-            <Card className="bg-surface">
+            <Card className="bg-surface relative">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-[12px] font-semibold text-ink-muted">Core API</CardTitle>
                 <TileIcon icon={DatabaseZap} />
@@ -67,9 +67,10 @@ export default function Dashboard() {
                 <div className="text-[24px] font-bold text-emerald-500">Online</div>
                 <p className="text-[12px] text-ink-muted mt-1">v{health.version}</p>
               </CardContent>
+              <Loader2 className="absolute bottom-4 right-4 w-4 h-4 text-white animate-spin opacity-70" />
             </Card>
 
-            <Card className="bg-surface">
+            <Card className="bg-surface relative">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-[12px] font-semibold text-ink-muted">Rule Engine</CardTitle>
                 <TileIcon icon={ListTree} />
@@ -78,9 +79,10 @@ export default function Dashboard() {
                 <div className="text-[24px] font-bold text-emerald-500">Active</div>
                 <p className="text-[12px] text-ink-muted mt-1">Deterministic signals</p>
               </CardContent>
+              <Loader2 className="absolute bottom-4 right-4 w-4 h-4 text-white animate-spin opacity-70" />
             </Card>
 
-            <Card className="bg-surface lg:col-span-2">
+            <Card className="bg-surface lg:col-span-2 relative">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-[12px] font-semibold text-ink-muted">ML Engine</CardTitle>
                 <TileIcon icon={Network} />
@@ -89,9 +91,10 @@ export default function Dashboard() {
                 <div className="text-[24px] font-bold text-white capitalize whitespace-nowrap overflow-hidden text-ellipsis">{health?.services?.ml_engine ?? "Unavailable"}</div>
                 <p className="text-[12px] text-ink-muted mt-1">Synthetic demonstration model</p>
               </CardContent>
+              <Loader2 className="absolute bottom-4 right-4 w-4 h-4 text-white animate-spin opacity-70" />
             </Card>
 
-            <Card className="bg-surface">
+            <Card className="bg-surface relative">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-[12px] font-semibold text-ink-muted">NLP Intelligence</CardTitle>
                 <TileIcon icon={MessageSquareWarning} />
@@ -100,6 +103,7 @@ export default function Dashboard() {
                 <div className="text-[24px] font-bold text-emerald-500">Active</div>
                 <p className="text-[12px] text-ink-muted mt-1">Pattern analysis online</p>
               </CardContent>
+              <Loader2 className="absolute bottom-4 right-4 w-4 h-4 text-white animate-spin opacity-70" />
             </Card>
           </div>
 
