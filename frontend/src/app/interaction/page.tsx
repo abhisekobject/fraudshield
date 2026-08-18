@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { TileIcon } from "../../components/ui/TileIcon";
 import { cn } from "../../utils/cn";
+import { RealTimeSentimentChart } from "../../components/risk/RealTimeSentimentChart";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Call scenarios — 5 variations from benign to critical
@@ -617,6 +618,12 @@ export default function InteractionAnalyzer() {
               </div>
             </CardContent>
           </Card>
+
+          <RealTimeSentimentChart 
+            isSimulating={isSimulating} 
+            callDuration={callDuration} 
+            expectedRiskLevel={activeScenario ? activeScenario.expectedRisk : "LOW"} 
+          />
 
           {/* Quick text demo shortcuts */}
           <Card className="bg-surface">

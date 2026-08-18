@@ -6,9 +6,11 @@ import { Fingerprint, Radar, ScanLine, AudioLines, ScanEye, Smartphone, RotateCc
 import { TileIcon } from "./TileIcon";
 import { usePathname } from "next/navigation";
 import { api } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   const getNavClass = (path: string, hoverColorGroup: string) => {
     const isActive = pathname === path;
@@ -68,6 +70,21 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 mb-4 space-y-3">
+        {/* User Badge */}
+        {user && (
+          <div className="bg-[#1f1f1f] rounded-[8px] p-3 flex items-center justify-between mb-4 border border-hairline">
+            <div className="flex flex-col">
+              <span className="text-[12px] font-semibold text-white truncate max-w-[120px]">{user.username}</span>
+              <span className="text-[10px] text-emerald-500 uppercase tracking-wider">{user.role}</span>
+            </div>
+            <button 
+              onClick={logout}
+              className="text-[10px] text-ink-muted hover:text-white underline underline-offset-2 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        )}
 
         {/* Reset Session button */}
         <button
