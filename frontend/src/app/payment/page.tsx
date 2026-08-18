@@ -12,6 +12,7 @@ import { SignalBreakdown } from "../../components/risk/SignalBreakdown";
 import { InterventionPanel } from "../../components/risk/InterventionPanel";
 import { Loader2, Send, BadgeCheck, FileWarning, Shuffle, ScanLine } from "lucide-react";
 import { TileIcon } from "../../components/ui/TileIcon";
+import { RiskRadarChart } from "../../components/risk/RiskRadarChart";
 
 import { DEMO_SCENARIOS, DemoScenario } from "../../utils/scenarios";
 
@@ -267,6 +268,9 @@ export default function PaymentSimulator() {
               <div>
                 <h3 className="text-[20px] font-semibold mb-4 text-white">Multi-Signal Intelligence</h3>
                 <SignalBreakdown evaluation={response.risk_evaluation} />
+                <div className="mt-4">
+                  <RiskRadarChart evaluation={response.risk_evaluation} />
+                </div>
               </div>
 
               {/* Intervention Action */}

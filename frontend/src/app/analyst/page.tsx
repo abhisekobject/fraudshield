@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Ca
 import { Button } from "../../components/ui/Button";
 import { Loader2, RefreshCw, AlertCircle, ChevronDown, ChevronUp, CheckCircle, ScanEye, BadgeCheck, Fingerprint, OctagonAlert } from "lucide-react";
 import { TileIcon } from "../../components/ui/TileIcon";
+import { EventRiskScatterChart } from "../../components/risk/EventRiskScatterChart";
 
 function getRiskColor(level: string) {
   switch (level) {
@@ -182,6 +183,8 @@ export default function AnalystView() {
           </Card>
         </div>
       )}
+
+      {events.length > 0 && <EventRiskScatterChart events={events} />}
 
       <Card className="bg-surface">
         <CardHeader className="border-b border-hairline bg-[#1f1f1f]">

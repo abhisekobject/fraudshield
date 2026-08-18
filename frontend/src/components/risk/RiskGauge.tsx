@@ -16,7 +16,8 @@ export function RiskGauge({ score, level }: RiskGaugeProps) {
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) {
-      setAnimatedScore(score);
+      const t = setTimeout(() => setAnimatedScore(score), 0);
+      return () => clearTimeout(t);
     } else {
       const timeout = setTimeout(() => setAnimatedScore(score), 50);
       return () => clearTimeout(timeout);

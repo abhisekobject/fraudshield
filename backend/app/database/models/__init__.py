@@ -19,6 +19,7 @@ from app.database.models.risk_reason import RiskReason
 from app.database.models.feedback import AnalystFeedback
 from app.database.models.transaction_event import TransactionEvent
 from app.database.models.privacy_audit_event import PrivacyAuditEvent
+from app.database.models.admin import AdminUser
 
 # Explicitly define what is exported
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "AnalystFeedback",
     "TransactionEvent",
     "PrivacyAuditEvent",
+    "AdminUser",
 ]
