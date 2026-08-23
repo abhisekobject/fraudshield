@@ -35,54 +35,83 @@
     --font-body: 'Inter', sans-serif;
     --font-mono: 'IBM Plex Mono', monospace;
 
-    /* Background base: pure black */
+    /* Apple-Inspired Minimalist Palette */
     --color-paper-val: #000000;
-    /* Surface / cards: light grey tile */
-    --color-surface-val: #1a1a1a;
-    /* Text primary */
+    --color-surface-val: #1C1C1E;
     --color-ink-val: #ffffff;
-    /* Text secondary (slate-300) / muted (slate-500) */
-    --color-ink-muted-val: #64748b; 
+    --color-ink-muted-val: #8e8e93;
     
-    /* Border subtle */
-    --color-hairline-val: #222222;
-    /* Border interactive */
-    --color-hairline-interactive-val: #444444;
+    --color-hairline-val: rgba(255, 255, 255, 0.08);
+    --color-hairline-interactive-val: rgba(255, 255, 255, 0.18);
 
-    /* Default interactive accent (can use emerald or blue depending on context) */
-    --color-accent-val: #10b981; /* emerald-500 */
-    --color-accent-interactive-val: #059669; /* emerald-600 */
-    --color-accent-soft-val: rgba(16, 185, 129, 0.1);
+    /* FraudShield Blue Accent */
+    --color-accent-val: #3b82f6;
+    --color-accent-interactive-val: #2563eb;
+    --color-accent-soft-val: rgba(59, 130, 246, 0.15);
 
     /* Risk / Status Accents */
-    /* Safe */
     --color-risk-low-val: #10b981;
-    --color-risk-low-bg-val: rgba(16, 185, 129, 0.1);
-    /* Warning */
+    --color-risk-low-bg-val: rgba(16, 185, 129, 0.12);
     --color-risk-medium-val: #f59e0b;
-    --color-risk-medium-bg-val: rgba(245, 158, 11, 0.1);
-    /* High Risk */
+    --color-risk-medium-bg-val: rgba(245, 158, 11, 0.12);
     --color-risk-high-val: #f97316;
-    --color-risk-high-bg-val: rgba(249, 115, 22, 0.1);
-    /* Critical */
+    --color-risk-high-bg-val: rgba(249, 115, 22, 0.12);
     --color-risk-critical-val: #ef4444;
-    --color-risk-critical-bg-val: rgba(239, 68, 68, 0.1);
+    --color-risk-critical-bg-val: rgba(239, 68, 68, 0.15);
     
-    /* Info/NLP */
-    --color-nlp-val: #3b82f6; /* blue-500 */
-    --color-nlp-bg-val: rgba(59, 130, 246, 0.1);
-    /* Analyst */
-    --color-analyst-val: #f59e0b;
+    --color-nlp-val: #38bdf8;
+    --color-nlp-bg-val: rgba(56, 189, 248, 0.12);
+    --color-analyst-val: #a855f7;
   }
 
   body {
-    background-color: var(--color-paper-val);
+    background-color: #000000 !important;
     color: var(--color-ink-val);
     font-family: var(--font-body);
   }
 
+  /* Fallback dark color applied to <html> so there's never a white flash */
+  html {
+    background-color: var(--color-paper-val);
+  }
+  
+  *, ::before, ::after {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+
   *:focus-visible {
-    outline: 2px solid var(--color-hairline-interactive-val);
+    outline: 2px solid var(--color-accent-val);
     outline-offset: 2px;
+  }
+
+
+}
+
+/* ── GlobalAppBackground Keyframes ─────────────────────────────────────────── */
+@keyframes fs-bg-drift {
+  0%   { transform: scale(1)    translate3d(0%,     0%,    0); }
+  50%  { transform: scale(1.02) translate3d(0.35%, -0.25%, 0); }
+  100% { transform: scale(1)    translate3d(0%,     0%,    0); }
+}
+
+@keyframes fs-center-glow {
+  0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1);    }
+  50%       { opacity: 0.60; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+.fs-bg-drift {
+  animation: fs-bg-drift 28s ease-in-out infinite;
+  will-change: transform;
+}
+
+.fs-center-glow {
+  animation: fs-center-glow 14s ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fs-bg-drift,
+  .fs-center-glow {
+    animation: none;
   }
 }

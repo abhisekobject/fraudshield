@@ -1,815 +1,1144 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { api } from "../../services/api";
-import { SocialEngineeringEvaluation, RiskLevel } from "../../types";
-import { Card, CardHeader, CardTitle, CardContent } from "../../components/ui/Card";
-import { Button } from "../../components/ui/Button";
-import { Badge } from "../../components/ui/Badge";
+import React, { useState, useRef, useEffect, useMemo } from"react";
+import { api } from"@/services/api";
+import { SocialEngineeringEvaluation, RiskLevel } from"@/types";
+import { Button } from"@/components/ui/Button";
+import { Badge } from"@/components/ui/Badge";
 import {
-  Loader2, Mic, MicOff, FileText, AlertTriangle, CheckCircle, ShieldAlert, PhoneCall, PhoneOff, Lock, ShieldCheck, AudioWaveform, Radio, MessageSquareWarning, BadgeCheck, OctagonAlert
-} from "lucide-react";
-import { TileIcon } from "../../components/ui/TileIcon";
-import { cn } from "../../utils/cn";
-import { RealTimeSentimentChart } from "../../components/risk/RealTimeSentimentChart";
+ Loader2, 
+ Mic, 
+ MicOff, 
+ FileText, 
+ PhoneCall, 
+ PhoneOff, 
+ Lock, 
+ ShieldCheck, 
+ AudioWaveform, 
+ Radio, 
+ MessageSquareWarning, 
+ BadgeCheck, 
+ OctagonAlert,
+ Activity,
+ AlertTriangle,
+ Zap,
+ Sparkles,
+ Volume2
+} from"lucide-react";
+import { cn } from"@/utils/cn";
+import { RealTimeSentimentChart } from"@/components/risk/RealTimeSentimentChart";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Call scenarios — 5 variations from benign to critical
 // ─────────────────────────────────────────────────────────────────────────────
 interface CallScenario {
-  id: string;
-  label: string;
-  tag: string;
-  tagColor: string;
-  borderColor: string;
-  expectedRisk: string;
-  rateMultiplier: number;   // speech rate modifier
-  pitchOffset: number;      // pitch offset from 1.0
-  script: string;
+ id: string;
+ label: string;
+ tag: string;
+ tagColor: string;
+ badgeBg: string;
+ badgeBorder: string;
+ borderColor: string;
+ expectedRisk: string;
+ rateMultiplier: number;
+ pitchOffset: number;
+ script: string;
 }
 
 const CALL_SCENARIOS: CallScenario[] = [
-  {
-    id: "legitimate",
-    label: "Legitimate Bank Call",
-    tag: "LOW RISK",
-    tagColor: "text-emerald-400",
-    borderColor: "border-emerald-900/50",
-    expectedRisk: "LOW",
-    rateMultiplier: 1.0,
-    pitchOffset: 0.1,
-    script:
-      "Caller: Hello, this is an automated security notification from your bank. We detected a login to your account from a new browser. If this was you, no action is needed.\nVictim: Okay, that was probably me.\nCaller: If you did not initiate this, please visit your nearest branch or dial the official helpline number printed on the back of your card. As a reminder, your bank will never call to ask for any verification codes or account credentials. Thank you and have a good day.",
-  },
-  {
-    id: "suspicious_legit",
-    label: "Urgent But Legitimate",
-    tag: "MEDIUM RISK",
-    tagColor: "text-amber-400",
-    borderColor: "border-amber-900/50",
-    expectedRisk: "MEDIUM",
-    rateMultiplier: 0.95,
-    pitchOffset: -0.05,
-    script:
-      "Caller: Hello, I am calling from Apollo Hospital, billing department. Your family member has been admitted and the insurance pre-authorization is still pending.\nVictim: Oh no, is everyone okay? How much is it?\nCaller: The hospital requires an advance deposit of twenty five thousand rupees before the procedure can be scheduled. Kindly visit the hospital cashier counter or use our official website to complete the payment at your earliest convenience.\nVictim: I will do that right away.\nCaller: The operation is planned for this afternoon, so prompt action would be appreciated. Thank you.",
-  },
-  {
-    id: "otp_phishing",
-    label: "OTP Phishing Attack",
-    tag: "HIGH RISK",
-    tagColor: "text-orange-400",
-    borderColor: "border-orange-900/50",
-    expectedRisk: "HIGH",
-    rateMultiplier: 0.9,
-    pitchOffset: -0.1,
-    script:
-      "Caller: I am calling from the bank fraud prevention team. We have blocked a transaction of eighty thousand rupees from your account. To reverse this and secure your account, I need to verify your identity.\nVictim: Oh my goodness, yes please secure it! What do you need?\nCaller: Please share the six digit OTP that was just sent to your registered mobile number. Do not share this with anyone else, only tell me as I am the official bank representative.",
-  },
-  {
-    id: "coercive_transfer",
-    label: "Coercive Transfer Scam",
-    tag: "CRITICAL",
-    tagColor: "text-red-400",
-    borderColor: "border-red-900/50",
-    expectedRisk: "CRITICAL",
-    rateMultiplier: 0.88,
-    pitchOffset: -0.2,
-    script:
-      "Caller: Listen carefully. Your bank account has been flagged by the Cyber Crime Department for suspicious transactions. You are under investigation.\nVictim: Investigation? I haven't done anything wrong!\nCaller: To avoid arrest and account seizure, you must immediately transfer fifty thousand rupees to a government safe-hold account I am providing you.\nVictim: I don't know if I can do that right now...\nCaller: Do not disconnect this call, do not tell your family, and do not visit any branch. This is confidential police protocol.",
-  },
-  {
-    id: "multi_signal",
-    label: "Full Multi-Signal Attack",
-    tag: "CRITICAL",
-    tagColor: "text-red-500",
-    borderColor: "border-red-900/70",
-    expectedRisk: "CRITICAL",
-    rateMultiplier: 0.85,
-    pitchOffset: -0.25,
-    script:
-      "Caller: Your account has been compromised by international hackers and is being drained right now. I am from the RBI Cyber Cell. If you do not act in the next two minutes, you will lose all your money permanently.\nVictim: Please help me stop it!\nCaller: Transfer everything to the emergency recovery account immediately. Give me the OTP to authorize the transfer. Stay on the line, do not hang up, do not call anyone else. This is your last chance to save your money.",
-  },
+ {
+ id:"legitimate",
+ label:"Legitimate Bank Call",
+ tag:"LOW RISK",
+ tagColor:"text-emerald-400",
+ badgeBg:"bg-emerald-500/10",
+ badgeBorder:"",
+ borderColor:"hover:border-emerald-400/50",
+ expectedRisk:"LOW",
+ rateMultiplier: 1.0,
+ pitchOffset: 0.1,
+ script:
+"Caller: Hello, this is an automated security notification from your bank. We detected a login to your account from a new browser. If this was you, no action is needed.\nVictim: Okay, that was probably me.\nCaller: If you did not initiate this, please visit your nearest branch or dial the official helpline number printed on the back of your card. As a reminder, your bank will never call to ask for any verification codes or account credentials. Thank you and have a good day.",
+ },
+ {
+ id:"suspicious_legit",
+ label:"Urgent But Legitimate",
+ tag:"MEDIUM RISK",
+ tagColor:"text-amber-400",
+ badgeBg:"bg-amber-500/10",
+ badgeBorder:"",
+ borderColor:"hover:border-amber-400/50",
+ expectedRisk:"MEDIUM",
+ rateMultiplier: 0.95,
+ pitchOffset: -0.05,
+ script:
+"Caller: Hello, I am calling from Apollo Hospital, billing department. Your family member has been admitted and the insurance pre-authorization is still pending.\nVictim: Oh no, is everyone okay? How much is it?\nCaller: The hospital requires an advance deposit of twenty five thousand rupees before the procedure can be scheduled. Kindly visit the hospital cashier counter or use our official website to complete the payment at your earliest convenience.\nVictim: I will do that right away.\nCaller: The operation is planned for this afternoon, so prompt action would be appreciated. Thank you.",
+ },
+ {
+ id:"otp_phishing",
+ label:"OTP Phishing Attack",
+ tag:"HIGH RISK",
+ tagColor:"text-orange-400",
+ badgeBg:"bg-orange-500/10",
+ badgeBorder:"",
+ borderColor:"hover:border-orange-400/50",
+ expectedRisk:"HIGH",
+ rateMultiplier: 0.9,
+ pitchOffset: -0.1,
+ script:
+"Caller: I am calling from the bank fraud prevention team. We have blocked a transaction of eighty thousand rupees from your account. To reverse this and secure your account, I need to verify your identity.\nVictim: Oh my goodness, yes please secure it! What do you need?\nCaller: Please share the six digit OTP that was just sent to your registered mobile number. Do not share this with anyone else, only tell me as I am the official bank representative.",
+ },
+ {
+ id:"coercive_transfer",
+ label:"Coercive Transfer Scam",
+ tag:"CRITICAL",
+ tagColor:"text-red-400",
+ badgeBg:"bg-red-500/15",
+ badgeBorder:"",
+ borderColor:"hover:border-red-400/60",
+ expectedRisk:"CRITICAL",
+ rateMultiplier: 0.88,
+ pitchOffset: -0.2,
+ script:
+"Caller: Listen carefully. Your bank account has been flagged by the Cyber Crime Department for suspicious transactions. You are under investigation.\nVictim: Investigation? I haven't done anything wrong!\nCaller: To avoid arrest and account seizure, you must immediately transfer fifty thousand rupees to a government safe-hold account I am providing you.\nVictim: I don't know if I can do that right now...\nCaller: Do not disconnect this call, do not tell your family, and do not visit any branch. This is confidential police protocol.",
+ },
+ {
+ id:"multi_signal",
+ label:"Full Multi-Signal Attack",
+ tag:"CRITICAL",
+ tagColor:"text-rose-400",
+ badgeBg:"bg-rose-500/20",
+ badgeBorder:"",
+ borderColor:"hover:border-rose-400/70",
+ expectedRisk:"CRITICAL",
+ rateMultiplier: 0.85,
+ pitchOffset: -0.25,
+ script:
+"Caller: Your account has been compromised by international hackers and is being drained right now. I am from the RBI Cyber Cell. If you do not act in the next two minutes, you will lose all your money permanently.\nVictim: Please help me stop it!\nCaller: Transfer everything to the emergency recovery account immediately. Give me the OTP to authorize the transfer. Stay on the line, do not hang up, do not call anyone else. This is your last chance to save your money.",
+ },
 ];
 
+// Circular SVG Risk Gauge Component for Analysis Overview
+function CircularAnalysisGauge({ score, isAnalyzed }: { score: number; isAnalyzed: boolean }) {
+ const size = 150;
+ const strokeWidth = 10;
+ const radius = (size - strokeWidth) / 2;
+ const circumference = radius * 2 * Math.PI;
+ const clampedScore = isAnalyzed ? Math.min(100, Math.max(0, score)) : 0;
+ const strokeDashoffset = circumference - (clampedScore / 100) * circumference;
+
+ let strokeColor ="#3b82f6";
+ let glowColor ="rgba(59, 130, 246, 0.35)";
+ if (isAnalyzed) {
+ if (score < 30) {
+ strokeColor ="#10b981";
+ glowColor ="rgba(16, 185, 129, 0.35)";
+ } else if (score < 60) {
+ strokeColor ="#f59e0b";
+ glowColor ="rgba(245, 158, 11, 0.35)";
+ } else if (score < 80) {
+ strokeColor ="#f97316";
+ glowColor ="rgba(249, 115, 22, 0.35)";
+ } else {
+ strokeColor ="#ef4444";
+ glowColor ="rgba(239, 68, 68, 0.45)";
+ }
+ }
+
+ return (
+ <div className="relative flex flex-col items-center justify-center">
+ <svg width={size} height={size} className="-rotate-90">
+ {/* Background track */}
+ <circle
+ cx={size / 2}
+ cy={size / 2}
+ r={radius}
+ fill="none"
+ stroke="rgba(255, 255, 255, 0.08)"
+ strokeWidth={strokeWidth}
+ />
+ {/* Active progress arc */}
+ {isAnalyzed && (
+ <circle
+ cx={size / 2}
+ cy={size / 2}
+ r={radius}
+ fill="none"
+ stroke={strokeColor}
+ strokeWidth={strokeWidth}
+ strokeDasharray={circumference}
+ strokeDashoffset={strokeDashoffset}
+ strokeLinecap="round"
+ style={{
+ transition:"stroke-dashoffset 1.2s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.5s ease",
+ filter:`drop-(0 0 8px ${glowColor})`,
+ }}
+ />
+ )}
+ </svg>
+
+ {/* Center score readout */}
+ <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+ {isAnalyzed ? (
+ <>
+ <span className="text-3xl font-mono font-bold text-white tracking-tight">
+ {score}
+ </span>
+ <span className="text-[11px] font-mono text-white uppercase tracking-wider">
+ / 100
+ </span>
+ </>
+ ) : (
+ <>
+ <span className="text-2xl font-mono font-bold text-white tracking-tight">
+ --
+ </span>
+ <span className="text-[11px] font-mono text-white uppercase tracking-wider">
+ / 100
+ </span>
+ </>
+ )}
+ </div>
+ </div>
+ );
+}
+
 export default function InteractionAnalyzer() {
-  const [transcript, setTranscript] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<SocialEngineeringEvaluation | null>(null);
+ const [transcript, setTranscript] = useState("");
+ const [loading, setLoading] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+ const [result, setResult] = useState<SocialEngineeringEvaluation | null>(null);
 
-  const [activeScenario, setActiveScenario] = useState<CallScenario | null>(null);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [callDuration, setCallDuration] = useState(0);
-  const [isListening, setIsListening] = useState(false);
+ const [activeScenario, setActiveScenario] = useState<CallScenario | null>(null);
+ const [isSimulating, setIsSimulating] = useState(false);
+ const [callDuration, setCallDuration] = useState(0);
+ const [isListening, setIsListening] = useState(false);
 
-  // Privacy feature state — hash tile shown separately, textarea stays readable
-  const [hashedOutput, setHashedOutput] = useState<string | null>(null);
-  const [isEncrypting, setIsEncrypting] = useState(false);
+ // Privacy feature state
+ const [hashedOutput, setHashedOutput] = useState<string | null>(null);
+ const [isEncrypting, setIsEncrypting] = useState(false);
 
-  const [viewMode, setViewMode] = useState<"chat" | "raw">("chat");
+ const [viewMode, setViewMode] = useState<"chat"|"raw">("chat");
 
-  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null);
+ const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+ const textareaRef = useRef<HTMLTextAreaElement>(null);
+ const chatContainerRef = useRef<HTMLDivElement>(null);
+ const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const recognitionRef = useRef<any>(null);
 
-  useEffect(() => {
-    return () => cleanup();
-  }, []);
+ useEffect(() => {
+ return () => cleanup();
+ }, []);
 
-  // Auto-scroll textarea/chat as words appear
-  useEffect(() => {
-    if (textareaRef.current && isSimulating && viewMode === "raw") {
-      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-    }
-    if (chatContainerRef.current && isSimulating && viewMode === "chat") {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [transcript, isSimulating, viewMode]);
+ // Auto-scroll textarea/chat as words appear
+ useEffect(() => {
+ if (textareaRef.current && isSimulating && viewMode ==="raw") {
+ textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+ }
+ if (chatContainerRef.current && isSimulating && viewMode ==="chat") {
+ chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+ }
+ }, [transcript, isSimulating, viewMode]);
 
-  const cleanup = () => {
-    if (callTimerRef.current) clearInterval(callTimerRef.current);
-    callTimerRef.current = null;
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-    utteranceRef.current = null;
-  };
+ const cleanup = () => {
+ if (callTimerRef.current) clearInterval(callTimerRef.current);
+ callTimerRef.current = null;
+ if (typeof window !=="undefined"&&"speechSynthesis"in window) {
+ window.speechSynthesis.cancel();
+ }
+ utteranceRef.current = null;
+ };
 
-  const stopSimulation = () => {
-    cleanup();
-    stopListening();
-    setIsSimulating(false);
-    setCallDuration(0);
-    setActiveScenario(null);
-  };
+ const stopSimulation = () => {
+ cleanup();
+ stopListening();
+ setIsSimulating(false);
+ setCallDuration(0);
+ setActiveScenario(null);
+ };
 
-  // ── Live speech-to-text microphone dictation ──────────────────────────────
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  };
+ // ── Live speech-to-text microphone dictation ──────────────────────────────
+ const stopListening = () => {
+ if (recognitionRef.current) {
+ recognitionRef.current.stop();
+ recognitionRef.current = null;
+ }
+ setIsListening(false);
+ };
 
-  const toggleMic = () => {
-    if (isListening) {
-      stopListening();
-      return;
-    }
-    // Stop any ongoing scenario simulation before mic input
-    if (isSimulating) stopSimulation();
-    setResult(null);
-    setError(null);
-    setHashedOutput(null);
+ const toggleMic = () => {
+ if (isListening) {
+ stopListening();
+ return;
+ }
+ if (isSimulating) stopSimulation();
+ setResult(null);
+ setError(null);
+ setHashedOutput(null);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setError("Live dictation is not supported in this browser. Please use Chrome.");
-      return;
-    }
+ // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+ if (!SpeechRecognition) {
+ setError("Live dictation is not supported in this browser. Please use Chrome.");
+ return;
+ }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = "en-IN";
-    recognition.continuous = true;       // keep listening until manually stopped
-    recognition.interimResults = true;   // show partial results as user speaks
-    recognition.maxAlternatives = 1;
+ const recognition = new SpeechRecognition();
+ recognition.lang ="en-IN";
+ recognition.continuous = true;
+ recognition.interimResults = true;
+ recognition.maxAlternatives = 1;
 
-    let finalText = transcript; // preserve existing transcript text
+ let finalText = transcript;
 
-    recognition.onresult = (event: any) => {
-      let interimText = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalText += (finalText ? " " : "") + result[0].transcript.trim();
-        } else {
-          interimText = result[0].transcript;
-        }
-      }
-      // Show finalised text + live interim preview
-      setTranscript(finalText + (interimText ? " " + interimText : ""));
-      // Auto-scroll textarea
-      if (textareaRef.current) {
-        textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
-      }
-    };
+ recognition.onresult = (event: any) => {
+ let interimText ="";
+ for (let i = event.resultIndex; i < event.results.length; i++) {
+ const res = event.results[i];
+ if (res.isFinal) {
+ finalText += (finalText ?"":"") + res[0].transcript.trim();
+ } else {
+ interimText = res[0].transcript;
+ }
+ }
+ setTranscript(finalText + (interimText ?""+ interimText :""));
+ if (textareaRef.current) {
+ textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+ }
+ };
 
-    recognition.onerror = (event: any) => {
-      if (event.error !== "aborted" && event.error !== "no-speech") {
-        setError(`Microphone error: ${event.error}. Please allow microphone access.`);
-      }
-      stopListening();
-    };
+ recognition.onerror = (event: any) => {
+ if (event.error !=="aborted"&& event.error !=="no-speech") {
+ setError(`Microphone error: ${event.error}. Please allow microphone access.`);
+ }
+ stopListening();
+ };
 
-    recognition.onend = () => {
-      // If still in listening mode, restart (continuous mode can auto-stop on silence)
-      if (recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch { /* already started */ }
-      } else {
-        setIsListening(false);
-      }
-    };
+ recognition.onend = () => {
+ if (recognitionRef.current) {
+ try { recognitionRef.current.start(); } catch { /* already started */ }
+ } else {
+ setIsListening(false);
+ }
+ };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
-  };
+ recognitionRef.current = recognition;
+ recognition.start();
+ setIsListening(true);
+ };
 
-  const simulateCall = (scenario: CallScenario) => {
-    // Stop any ongoing simulation first
-    cleanup();
+ const simulateCall = (scenario: CallScenario) => {
+ cleanup();
 
-    setIsSimulating(true);
-    setActiveScenario(scenario);
-    setTranscript("");
-    setResult(null);
-    setError(null);
-    setCallDuration(0);
-    setHashedOutput(null);
+ setIsSimulating(true);
+ setActiveScenario(scenario);
+ setTranscript("");
+ setResult(null);
+ setError(null);
+ setCallDuration(0);
+ setHashedOutput(null);
 
-    // ── Call duration timer ─────────────────────────────────────────────────
-    callTimerRef.current = setInterval(() => {
-      setCallDuration((prev) => prev + 1);
-    }, 1000);
+ callTimerRef.current = setInterval(() => {
+ setCallDuration((prev) => prev + 1);
+ }, 1000);
 
-    // ── Speech synthesis with word-boundary sync ────────────────────────────
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      const utterance = new SpeechSynthesisUtterance(scenario.script);
-      utterance.rate = 0.85 * scenario.rateMultiplier;
-      utterance.pitch = 1.0 + scenario.pitchOffset;
-      utterance.volume = 1.0;
+ if (typeof window !=="undefined"&&"speechSynthesis"in window) {
+ const utterance = new SpeechSynthesisUtterance(scenario.script);
+ utterance.rate = 0.85 * scenario.rateMultiplier;
+ utterance.pitch = 1.0 + scenario.pitchOffset;
+ utterance.volume = 1.0;
 
-      // Pick a voice — prefer an English voice
-      const loadVoiceAndSpeak = () => {
-        const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
-          const englishVoice =
-            voices.find((v) => v.lang === "en-IN") ||
-            voices.find((v) => v.lang === "en-GB") ||
-            voices.find((v) => v.lang.startsWith("en-"));
-          if (englishVoice) utterance.voice = englishVoice;
-        }
+ const loadVoiceAndSpeak = () => {
+ const voices = window.speechSynthesis.getVoices();
+ if (voices.length > 0) {
+ const englishVoice =
+ voices.find((v) => v.lang ==="en-IN") ||
+ voices.find((v) => v.lang ==="en-GB") ||
+ voices.find((v) => v.lang.startsWith("en-"));
+ if (englishVoice) utterance.voice = englishVoice;
+ }
 
-        // ── KEY FIX: Use onboundary to sync transcript with actual spoken words ──
-        // onboundary fires when the synthesizer reaches each word boundary,
-        // giving us the exact character position in the script being spoken.
-        utterance.onboundary = (event: SpeechSynthesisEvent) => {
-          if (event.name === "word") {
-            // Reveal text up to the end of the word just spoken
-            const endIdx = event.charIndex + event.charLength;
-            setTranscript(scenario.script.substring(0, endIdx));
-          }
-        };
+ utterance.onboundary = (event: SpeechSynthesisEvent) => {
+ if (event.name ==="word") {
+ const endIdx = event.charIndex + event.charLength;
+ setTranscript(scenario.script.substring(0, endIdx));
+ }
+ };
 
-        utterance.onend = () => {
-          // Ensure the full text is shown when speech finishes
-          setTranscript(scenario.script);
-          if (callTimerRef.current) clearInterval(callTimerRef.current);
-          callTimerRef.current = null;
-          setIsSimulating(false);
-          setActiveScenario(null);
-        };
+ utterance.onend = () => {
+ setTranscript(scenario.script);
+ if (callTimerRef.current) clearInterval(callTimerRef.current);
+ callTimerRef.current = null;
+ setIsSimulating(false);
+ setActiveScenario(null);
+ };
 
-        utterance.onerror = () => {
-          if (callTimerRef.current) clearInterval(callTimerRef.current);
-          setIsSimulating(false);
-          setActiveScenario(null);
-        };
+ utterance.onerror = () => {
+ if (callTimerRef.current) clearInterval(callTimerRef.current);
+ setIsSimulating(false);
+ setActiveScenario(null);
+ };
 
-        utteranceRef.current = utterance;
-        window.speechSynthesis.speak(utterance);
-      };
+ utteranceRef.current = utterance;
+ window.speechSynthesis.speak(utterance);
+ };
 
-      // Voices may not be loaded yet on first call
-      if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.onvoiceschanged = loadVoiceAndSpeak;
-      } else {
-        loadVoiceAndSpeak();
-      }
-    } else {
-      // Fallback: No speech API → just type out the text fast
-      let idx = 0;
-      const fallback = setInterval(() => {
-        idx += 3;
-        setTranscript(scenario.script.substring(0, idx));
-        if (idx >= scenario.script.length) {
-          clearInterval(fallback);
-          setIsSimulating(false);
-          setActiveScenario(null);
-        }
-      }, 30);
-    }
-  };
+ if (window.speechSynthesis.getVoices().length === 0) {
+ window.speechSynthesis.onvoiceschanged = loadVoiceAndSpeak;
+ } else {
+ loadVoiceAndSpeak();
+ }
+ } else {
+ let idx = 0;
+ const fallback = setInterval(() => {
+ idx += 3;
+ setTranscript(scenario.script.substring(0, idx));
+ if (idx >= scenario.script.length) {
+ clearInterval(fallback);
+ setIsSimulating(false);
+ setActiveScenario(null);
+ }
+ }, 30);
+ }
+ };
 
-  const handleAnalyze = async () => {
-    if (!transcript.trim()) return;
-    stopSimulation();
-    setLoading(true);
-    setError(null);
-    setResult(null);
-    setHashedOutput(null);
-    try {
-      const data = await api.analyzeInteraction({ transcript, channel: "voice" });
-      setResult(data);
-      // Auto-trigger hash animation as soon as result is in
-      triggerAutoHash(transcript);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to analyze interaction");
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleAnalyze = async () => {
+ if (!transcript.trim()) return;
+ stopSimulation();
+ setLoading(true);
+ setError(null);
+ setResult(null);
+ setHashedOutput(null);
+ try {
+ const data = await api.analyzeInteraction({ transcript, channel:"voice"});
+ setResult(data);
+ triggerAutoHash(transcript);
+ } catch (err: unknown) {
+ setError(err instanceof Error ? err.message :"Failed to analyze interaction");
+ } finally {
+ setLoading(false);
+ }
+ };
 
-  const triggerAutoHash = (rawText: string) => {
-    if (!rawText.trim() || isEncrypting) return;
-    setIsEncrypting(true);
-    setHashedOutput(null);
+ const triggerAutoHash = (rawText: string) => {
+ if (!rawText.trim() || isEncrypting) return;
+ setIsEncrypting(true);
+ setHashedOutput(null);
 
-    const chars = "0123456789ABCDEF!@#$%^&*";
-    const finalHash = "0x" + Array.from({ length: 64 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    const words = rawText.trim().split(" ");
+ const chars ="0123456789ABCDEF!@#$%^&*";
+ const finalHash ="0x"+ Array.from({ length: 64 }, () =>"0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+ const words = rawText.trim().split("");
 
-    // Build a fake "byte-stream" display that cycles through garbled text
-    let iterations = 0;
-    const maxIterations = 22;
-    const interval = setInterval(() => {
-      const scrambled = words
-        .map(() => Array.from({ length: Math.floor(Math.random() * 6) + 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""))
-        .join(" ");
-      setHashedOutput(scrambled);
-      iterations++;
-      if (iterations >= maxIterations) {
-        clearInterval(interval);
-        setHashedOutput(
-          `[SECURED TRANSCRIPT — CLIENT-SIDE ONLY]\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `SHA-256 HASH:\n${finalHash}\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
-          `WORDS     : ${words.length}\n` +
-          `CHARS     : ${rawText.length}\n` +
-          `ENCODING  : UTF-8 / AES-256-GCM (simulated)\n` +
-          `STATUS    : ✓ Secured — raw transcript never transmitted`
-        );
-        setIsEncrypting(false);
-      }
-    }, 40);
-  };
+ let iterations = 0;
+ const maxIterations = 22;
+ const interval = setInterval(() => {
+ const scrambled = words
+ .map(() => Array.from({ length: Math.floor(Math.random() * 6) + 3 }, () => chars[Math.floor(Math.random() * chars.length)]).join(""))
+ .join("");
+ setHashedOutput(scrambled);
+ iterations++;
+ if (iterations >= maxIterations) {
+ clearInterval(interval);
+ setHashedOutput(
+`[SECURED TRANSCRIPT — CLIENT-SIDE ONLY]\n`+
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`+
+`SHA-256 HASH:\n${finalHash}\n`+
+`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`+
+`WORDS : ${words.length}\n`+
+`CHARS : ${rawText.length}\n`+
+`ENCODING : UTF-8 / AES-256-GCM (simulated)\n`+
+`STATUS : ✓ Secured — raw transcript never transmitted`
+ );
+ setIsEncrypting(false);
+ }
+ }, 40);
+ };
 
-  const formatDuration = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+ const formatDuration = (s: number) =>
+`${String(Math.floor(s / 60)).padStart(2,"0")}:${String(s % 60).padStart(2,"0")}`;
 
-  // (handleEncrypt removed — hashing now happens automatically after analysis)
+ // ── Calculated Risk Dimensions from NLP results ───────────────────────────
+ const riskDimensions = useMemo(() => {
+ if (!result) {
+ return {
+ socialEngineering: null,
+ linguisticRisk: null,
+ emotionalPressure: null,
+ deceptionProbability: null,
+ overallRisk: null,
+ };
+ }
 
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl mx-auto">
+ const baseScore = Math.round(result.score * 100);
+ const indicators = result.triggered_indicators || [];
 
-      {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div>
-        <h1 className="text-[36px] font-display font-bold tracking-tight flex items-center gap-3 text-white">
-          <TileIcon icon={AudioWaveform} className="w-16 h-16 bg-white" iconClassName="w-10 h-10 text-emerald-500" />
-          Interaction Intelligence
-        </h1>
-      </div>
+ // Calculate dimensions based on indicator presence and severity
+ const countCategory = (cat: string) =>
+ indicators.filter((ind) => ind.category.toLowerCase().includes(cat.toLowerCase())).length;
 
-      {/* ── Scenario Buttons ─────────────────────────────────────────────── */}
-      <Card>
-        <CardHeader className="pb-3 border-b border-hairline mb-4">
-          <CardTitle className="text-sm text-white font-semibold">
-            Select a Call Scenario to Simulate
-          </CardTitle>
-          <p className="text-xs text-ink-muted mt-1">
-            Click any scenario to start a live call. The system will speak the script and transcribe it word-by-word in sync with the audio.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-            {CALL_SCENARIOS.map((scenario) => {
-              const isActive = activeScenario?.id === scenario.id;
-              return (
-                <button
-                  key={scenario.id}
-                  onClick={() => isSimulating ? (isActive ? stopSimulation() : null) : simulateCall(scenario)}
-                  disabled={isSimulating && !isActive}
-                  className={cn(
-                    "relative flex flex-col items-start text-left p-4 rounded-[8px] transition-colors",
-                    "disabled:opacity-30 disabled:cursor-not-allowed",
-                    isActive
-                      ? "bg-emerald-50 border-2 border-emerald-500"
-                      : "bg-white hover:bg-neutral-100 shadow-sm"
-                  )}
-                >
-                  {isActive && (
-                    <span className="absolute top-3 right-3 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-accent-interactive" />
-                    </span>
-                  )}
-                  <div className="flex items-center gap-2 mb-2">
-                    {isActive
-                      ? <PhoneOff className="w-4 h-4 text-red-500" />
-                      : <PhoneCall className="w-4 h-4 text-neutral-400" />
-                    }
-                  </div>
-                  <p className="text-[14px] font-semibold leading-tight text-neutral-900">{scenario.label}</p>
-                  <p className={cn("text-[10px] font-bold mt-1.5 tracking-wide", isActive ? "text-emerald-600" : "text-neutral-400")}>
-                    {isActive ? "● ACTIVE" : scenario.tag}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+ const socialCount = countCategory("social") + countCategory("authority") + countCategory("impersonation");
+ const linguisticCount = countCategory("urgency") + countCategory("threat") + countCategory("lexical");
+ const pressureCount = countCategory("pressure") + countCategory("coercion") + countCategory("panic");
+ const deceptionCount = countCategory("phishing") + countCategory("credential") + countCategory("otp");
 
-      {/* ── Live Call Banner ─────────────────────────────────────────────── */}
-      {isSimulating && activeScenario && (
-        <div className="bg-emerald-900/20 border border-emerald-500/30 rounded-[6px] px-5 py-4 flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="w-12 h-12 rounded-full bg-surface border border-emerald-500/30 flex items-center justify-center">
-              <PhoneCall className="w-5 h-5 text-emerald-400" />
-            </div>
-            <span className="absolute -top-1 -right-1 flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500" />
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[14px] font-semibold text-white">
-              Live Call: {activeScenario.label}
-            </p>
-            <p className="text-[12px] text-emerald-200/70 mt-0.5">
-              Transcribing word-by-word in sync with voice output.
-            </p>
-          </div>
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="text-right">
-              <p className="text-[18px] font-mono font-bold text-white">{formatDuration(callDuration)}</p>
-              <p className="text-[12px] text-emerald-200/70">Duration</p>
-            </div>
-            <button
-              onClick={stopSimulation}
-              className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/40 rounded-[6px] text-red-400 hover:bg-red-500/20 text-[12px] font-semibold transition-colors"
-            >
-              <PhoneOff className="w-3 h-3" /> End
-            </button>
-          </div>
-        </div>
-      )}
+ const computeScore = (count: number, baseline: number) => {
+ if (count > 0) {
+ return Math.min(100, Math.max(15, baseline + (count * 12) + (count > 2 ? 10 : 0)));
+ }
+ return Math.max(5, Math.round(baseline * 0.75));
+ };
 
-      <div className="grid md:grid-cols-[1fr_1fr] gap-8">
+ return {
+ socialEngineering: computeScore(socialCount, baseScore),
+ linguisticRisk: computeScore(linguisticCount, baseScore),
+ emotionalPressure: computeScore(pressureCount, baseScore),
+ deceptionProbability: computeScore(deceptionCount, baseScore),
+ overallRisk: baseScore,
+ };
+ }, [result]);
 
-        {/* ── Left: Transcript ───────────────────────────────────────────── */}
-        <div className="space-y-4">
-          <Card className="bg-surface">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-[16px] text-white">
-                  {isSimulating && (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                    </span>
-                  )}
-                  {isListening && (
-                    <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
-                    </span>
-                  )}
-                  {isListening ? "Listening..." : isSimulating ? "Live Transcript" : "Voice Transcript"}
-                </CardTitle>
+ return (
+ <div className="space-y-6 md:space-y-8 max-w-[1400px] mx-auto">
 
-                {/* ── Microphone dictation button ── */}
-                <button
-                  onClick={toggleMic}
-                  disabled={isSimulating}
-                  title={isListening ? "Stop dictation" : "Speak to transcribe"}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-[4px] border text-xs font-semibold transition-colors",
-                    "disabled:opacity-30 disabled:cursor-not-allowed",
-                    isListening
-                      ? "bg-red-500/10 border-red-500/50 text-red-500 hover:bg-red-500/20 animate-pulse"
-                      : "bg-[#1f1f1f] border-hairline-interactive text-ink-muted hover:text-white"
-                  )}
-                >
-                  {isListening
-                    ? <><MicOff className="w-3.5 h-3.5" /> Stop</>  
-                    : <><Mic className="w-3.5 h-3.5" /> Dictate</>
-                  }
-                </button>
-                <div className="flex bg-[#1f1f1f] border border-hairline-interactive rounded-[4px] overflow-hidden">
-                  <button
-                    onClick={() => setViewMode("chat")}
-                    className={cn("px-3 py-1 text-[10px] font-semibold transition-colors", viewMode === "chat" ? "bg-emerald-500/20 text-emerald-400" : "text-ink-muted hover:text-white")}
-                  >
-                    Chat View
-                  </button>
-                  <button
-                    onClick={() => setViewMode("raw")}
-                    className={cn("px-3 py-1 text-[10px] font-semibold transition-colors border-l border-hairline-interactive", viewMode === "raw" ? "bg-emerald-500/20 text-emerald-400" : "text-ink-muted hover:text-white")}
-                  >
-                    Raw Edit
-                  </button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="relative">
-                {viewMode === "raw" || isListening ? (
-                  <textarea
-                    ref={textareaRef}
-                    className={cn(
-                      "w-full h-52 rounded-[6px] border bg-black p-4 pr-16 text-[14px] text-white focus:outline-none focus:ring-1 resize-none shadow-sm placeholder:text-slate-600 transition-colors",
-                      isListening
-                        ? "border-red-500 focus:ring-red-500"
-                        : isSimulating
-                        ? "border-emerald-500 focus:ring-emerald-500"
-                        : "border-neutral-800 focus:ring-emerald-500 focus:border-emerald-500"
-                    )}
-                    placeholder={isListening
-                      ? "Speak now — your words will appear here in real-time..."
-                      : "Select a scenario, click Dictate to speak, or type/paste a transcript here..."
-                    }
-                    value={transcript}
-                    onChange={(e) => { if (!isSimulating && !isListening && !hashedOutput && !isEncrypting) setTranscript(e.target.value); }}
-                    readOnly={isSimulating || !!hashedOutput || isEncrypting}
-                  />
-                ) : (
-                  <div
-                    ref={chatContainerRef}
-                    className={cn(
-                      "w-full h-52 overflow-y-auto rounded-[6px] border bg-black p-4 text-[14px] text-white shadow-sm transition-colors space-y-3",
-                      isSimulating ? "border-emerald-500" : "border-neutral-800"
-                    )}
-                  >
-                    {!transcript.trim() && (
-                      <div className="text-slate-600 italic h-full flex items-center justify-center text-[12px]">
-                        No transcript yet. Select a scenario or switch to Raw Edit to paste.
-                      </div>
-                    )}
-                    {transcript.split('\n').map((line, idx) => {
-                      if (!line.trim()) return null;
-                      const isCaller = line.startsWith("Caller:");
-                      const isVictim = line.startsWith("Victim:");
-                      const content = line.replace(/^(Caller:|Victim:)\s*/i, "");
-                      
-                      if (!isCaller && !isVictim) {
-                        return <div key={idx} className="text-[12px] text-slate-500 bg-[#1f1f1f] p-2 rounded-[4px]">{line}</div>;
-                      }
+ {/* ── Header ───────────────────────────────────────────────────────── */}
+ <div className="flex flex-col items-center text-center space-y-3 pt-2">
+ <div data-animate="header"className="inline-flex items-center justify-center p-3 -2xl bg-cyan-500/15 _0_24px_rgba(6,182,212,0.25)]">
+ <AudioWaveform className="w-8 h-8 text-white"/>
+ </div>
+ <h1 data-animate="header"className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
+ Interaction Intelligence
+ </h1>
+ <p data-animate="description"className="text-sm sm:text-base text-white max-w-2xl font-normal leading-relaxed">
+ Real-time voice phishing detection, social engineering pattern recognition, and live audio transcription.
+ </p>
+ </div>
 
-                      return (
-                        <div key={idx} className={cn("flex w-full", isVictim ? "justify-end" : "justify-start")}>
-                          <div className={cn(
-                            "max-w-[85%] rounded-[6px] px-3 py-2 text-[14px]",
-                            isVictim 
-                              ? "bg-emerald-900/30 border border-emerald-500/30 text-emerald-100" 
-                              : "bg-neutral-900 border border-neutral-800 text-white"
-                          )}>
-                            <div className={cn("text-[10px] font-bold mb-0.5 tracking-wider", isVictim ? "text-emerald-400" : "text-slate-400")}>
-                              {isVictim ? "Victim" : "Caller"}
-                            </div>
-                            <p className="leading-snug">{content}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                {isSimulating && (
-                  <span className="absolute bottom-3 right-3 text-[10px] text-emerald-500 font-mono font-bold tracking-widest animate-pulse">
-                    ● REC
-                  </span>
-                )}
-                {isListening && (
-                  <span className="absolute bottom-3 right-3 text-[10px] text-red-500 font-mono font-bold tracking-widest animate-pulse">
-                    ● MIC
-                  </span>
-                )}
-              </div>
-              <p className="text-[12px] text-ink-muted mt-3">
-                Processed securely via server-side NLP Risk Engine. Audio data is discarded immediately after analysis.
-              </p>
-              <div className="flex gap-2 mt-4">
-                <Button
-                  onClick={handleAnalyze}
-                  disabled={loading || !transcript.trim() || isSimulating || isListening}
-                  className="flex-1 bg-blue-500 hover:bg-blue-600 border-0 disabled:opacity-40 text-white font-semibold"
-                >
-                  {loading
-                    ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Analyzing...</>
-                    : <><FileText className="w-4 h-4 mr-2" />Analyze Transcript</>
-                  }
-                </Button>
+ {/* ── Call Scenario Panel ─────────────────────────────────────────────── */}
+ <div data-animate="panel"className="-[22px] bg-[#1C1C1E] _20px_50px_rgba(0,0,0,0.35)] p-5 sm:p-6 md:p-7 space-y-5">
+ <div className="space-y-1">
+ <h2 className="text-base sm:text-lg text-white font-semibold flex items-center gap-2">
+ <Volume2 className="w-4 h-4 text-white"/>
+ Select a Call Scenario to Simulate
+ </h2>
+ <p className="text-xs sm:text-sm text-white">
+ Click any scenario to start a live call. The system will speak the script and transcribe it word-by-word in sync with the audio.
+ </p>
+ </div>
 
-                {transcript && !isSimulating && !isListening && !isEncrypting && (
-                  <button
-                    onClick={() => { setTranscript(""); setResult(null); setError(null); setHashedOutput(null); }}
-                    className="px-3 py-2 rounded-[6px] border border-hairline-interactive text-white hover:bg-[#1f1f1f] text-[12px] font-semibold transition-colors"
-                    title="Clear transcript"
-                  >
-                    Clear
-                  </button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+ {/* 5 Scenario Cards Grid */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3.5">
+ {CALL_SCENARIOS.map((scenario) => {
+ const isActive = activeScenario?.id === scenario.id;
+ return (
+ <button
+ key={scenario.id}
+ data-animate="card"
+ onClick={() => isSimulating ? (isActive ? stopSimulation() : null) : simulateCall(scenario)}
+ disabled={isSimulating && !isActive}
+ className={cn(
+"relative flex flex-col justify-between items-start text-left p-4 sm:p-4.5 -2xl transition-all duration-300 cursor-pointer group min-h-[110px]",
+"disabled:opacity-35 disabled:cursor-not-allowed",
+ isActive
+ ?"bg-cyan-950/50 _0_25px_rgba(6,182,212,0.3)] ring-1 ring-cyan-400/50 -translate-y-0.5"
+ :"bg-[#1C1C1E] hover:bg-[#1C1C1E] hover:border-white/20"
+ )}
+ >
+ {/* Active Pulsing Indicator */}
+ {isActive && (
+ <span className="absolute top-3.5 right-3.5 flex h-2.5 w-2.5">
+ <span className="animate-ping absolute inline-flex h-full w-full -full bg-cyan-400 opacity-75"/>
+ <span className="relative inline-flex -full h-2.5 w-2.5 bg-cyan-400 _0_8px_rgba(6,182,212,0.8)]"/>
+ </span>
+ )}
 
-          <RealTimeSentimentChart 
-            isSimulating={isSimulating} 
-            callDuration={callDuration} 
-            expectedRiskLevel={activeScenario ? activeScenario.expectedRisk : "LOW"} 
-          />
+ <div className="flex items-center gap-2 mb-2">
+ <div className={cn(
+"w-8 h-8 -xl flex items-center justify-center transition-colors",
+ isActive ?"bg-red-500/20 text-red-400":"bg-[#1C1C1E] text-white group-hover:text-white"
+ )}>
+ {isActive ? (
+ <PhoneOff className="w-4 h-4 text-red-400"/>
+ ) : (
+ <PhoneCall className="w-4 h-4"/>
+ )}
+ </div>
+ </div>
 
-          {/* Quick text demo shortcuts */}
-          <Card className="bg-surface">
-            <CardHeader className="pb-2 border-b border-hairline mb-2">
-              <CardTitle className="text-[12px] text-ink-muted font-semibold">Or load a text-only scenario instantly</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pt-2">
-              <button className="w-full text-left px-3 py-2 rounded-[6px] border border-hairline hover:border-hairline-interactive bg-transparent hover:bg-[#1f1f1f] text-white text-[12px] transition-colors"
-                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Victim: Hi, just confirming I transferred the rent. Please check your account."); setResult(null); setHashedOutput(null); } }}>
-                💬 Casual legitimate message
-              </button>
-              <button className="w-full text-left px-3 py-2 rounded-[6px] border border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-[12px] transition-colors"
-                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Caller: Your bank account access will be blocked in 30 minutes. Call immediately to verify your identity and avoid suspension."); setResult(null); setHashedOutput(null); } }}>
-                ⚠️ Urgency-based phishing attempt
-              </button>
-              <button className="w-full text-left px-3 py-2 rounded-[6px] border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[12px] transition-colors"
-                onClick={() => { if (!isSimulating && !isEncrypting) { setTranscript("Caller: Your account is frozen by CBI. Transfer all funds NOW to avoid criminal charges.\nVictim: But I didn't do anything!\nCaller: Share OTP immediately or face arrest."); setResult(null); setHashedOutput(null); } }}>
-                🚨 Full critical attack pattern
-              </button>
-            </CardContent>
-          </Card>
+ <div className="w-full space-y-2">
+ <p className="text-[13.5px] font-semibold leading-snug text-white group-hover:text-white transition-colors">
+ {scenario.label}
+ </p>
+ 
+ <div className="flex items-center justify-between">
+ <span className={cn(
+"text-[10px] font-mono font-bold px-2 py-0.5 -md tracking-wider uppercase inline-block",
+ isActive
+ ?"bg-cyan-500/20 text-white"
+ : cn(scenario.badgeBg, scenario.tagColor, scenario.badgeBorder)
+ )}>
+ {isActive ?"● SIMULATING": scenario.tag}
+ </span>
+ </div>
+ </div>
+ </button>
+ );
+ })}
+ </div>
+ </div>
 
-          {/* ── Auto Secured Transcript Tile ──────────────────────────────── */}
-          {(isEncrypting || hashedOutput) && (
-            <Card className="border-emerald-500/30 bg-[#0a0a0a] animate-in fade-in slide-in-from-bottom-2 duration-500">
-              <CardHeader className="pb-2 border-b border-emerald-500/10 mb-2">
-                <CardTitle className="text-[14px] flex items-center gap-2 text-emerald-400">
-                  <Lock className="w-4 h-4" />
-                  Secured Transcript
-                  {isEncrypting && <Loader2 className="w-3.5 h-3.5 animate-spin ml-1" />}
-                  {!isEncrypting && hashedOutput && (
-                    <span className="ml-auto text-[10px] font-normal bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-[4px] tracking-wider border border-emerald-500/30">
-                      ✓ Secured
-                    </span>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <pre className={cn(
-                  "w-full rounded-[6px] border bg-black p-4 text-[12px] font-mono leading-relaxed break-all whitespace-pre-wrap shadow-sm transition-colors",
-                  isEncrypting
-                    ? "border-emerald-500/40 text-emerald-500 animate-pulse"
-                    : "border-neutral-800 text-emerald-400"
-                )}>
-                  {hashedOutput}
-                </pre>
-                <p className="text-[11px] text-ink-muted mt-2 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                  Raw transcript processed locally. Only the hash is shown here — nothing was transmitted.
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+ {/* ── Live Call Banner (Active Call State) ───────────────────────────── */}
+ {isSimulating && activeScenario && (
+ <div className="bg-cyan-950/40 -2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 _10px_30px_rgba(6,182,212,0.2)] animate-in fade-in duration-300">
+ <div className="flex items-center gap-3.5">
+ <div className="relative shrink-0">
+ <div className="w-12 h-12 -2xl bg-cyan-500/20 flex items-center justify-center">
+ <PhoneCall className="w-5 h-5 text-white animate-pulse"/>
+ </div>
+ <span className="absolute -top-1 -right-1 flex h-3 w-3">
+ <span className="animate-ping absolute inline-flex h-full w-full -full bg-cyan-400 opacity-75"/>
+ <span className="relative inline-flex -full h-3 w-3 bg-cyan-400"/>
+ </span>
+ </div>
+ <div>
+ <div className="flex items-center gap-2 flex-wrap">
+ <h3 className="text-base font-semibold text-white">
+ Live Call: {activeScenario.label}
+ </h3>
+ <span className="text-[10px] font-mono font-bold bg-cyan-500/20 text-white px-2 py-0.5 -full">
+ SYNCHRONIZED SPEECH
+ </span>
+ </div>
+ <p className="text-xs text-white mt-0.5">
+ Transcribing word-by-word in sync with speech synthesis audio.
+ </p>
+ </div>
+ </div>
 
-        {/* ── Right: Analysis Results ────────────────────────────────────── */}
-        <div className="space-y-4">
-          {isSimulating && !result && (
-            <div className="min-h-[200px] border border-emerald-500/30 bg-emerald-900/10 rounded-[6px] flex flex-col items-center justify-center p-8 text-center space-y-3">
-              <div className="w-14 h-14 rounded-full bg-surface border border-emerald-500/40 flex items-center justify-center">
-                <TileIcon icon={Radio} className="w-10 h-10 bg-white" iconClassName="w-6 h-6 text-emerald-400 animate-pulse" />
-              </div>
-              <p className="text-[14px] font-medium text-emerald-400">Transcribing in real-time...</p>
-              <p className="text-[12px] text-ink-muted max-w-xs">
-                The NLP analysis will run once the call finishes, or you can click &quot;Analyze Transcript&quot; at any point.
-              </p>
-            </div>
-          )}
+ <div className="flex items-center gap-4 shrink-0 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0">
+ <div className="text-left sm:text-right">
+ <p className="text-[20px] font-mono font-bold text-white leading-none">{formatDuration(callDuration)}</p>
+ <p className="text-[10px] text-white font-mono mt-0.5">Call Duration</p>
+ </div>
+ <button
+ onClick={stopSimulation}
+ className="flex items-center gap-2 px-4 py-2.5 bg-red-500/20 -xl text-red-300 hover:bg-red-500/30 hover:border-red-500/60 text-xs font-semibold transition-all cursor-pointer"
+ >
+ <PhoneOff className="w-3.5 h-3.5"/> End Call
+ </button>
+ </div>
+ </div>
+ )}
 
-          {error && !isSimulating && (
-            <Card className="border-red-500/30 bg-red-900/10">
-              <CardContent className="pt-6">
-                <h3 className="font-semibold mb-1 text-red-500">Analysis Failed</h3>
-                <p className="text-[14px] text-red-400">{error}</p>
-              </CardContent>
-            </Card>
-          )}
+ {/* ── Main Content Area: Two-Column Layout ────────────────────────────── */}
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 items-start">
 
-          {!result && !loading && !error && !isSimulating && (
-            <div className="min-h-[300px] border border-dashed border-hairline-interactive bg-surface rounded-[6px] flex flex-col items-center justify-center p-8 text-center">
-              <div className="w-16 h-16 rounded-full bg-black border border-hairline flex items-center justify-center mb-4">
-                <TileIcon icon={MessageSquareWarning} className="w-12 h-12 bg-white" iconClassName="w-8 h-8 text-ink-muted/50" />
-              </div>
-              <h3 className="text-[16px] font-medium text-white">Awaiting Transcript</h3>
-              <p className="text-[12px] text-ink-muted mt-2 max-w-xs">
-                Select a scenario above to simulate a live fraud call, or type in the box and click Analyze.
-              </p>
-            </div>
-          )}
+ {/* ── Left Column: Voice Transcript Panel ───────────────────────────── */}
+ <div className="space-y-5">
+ <div data-animate="panel"className="-[22px] bg-[#1C1C1E] _20px_50px_rgba(0,0,0,0.35)] p-5 sm:p-6 space-y-4">
+ 
+ {/* Header with Title & Controls */}
+ <div className="flex items-center justify-between pb-3 border-b gap-2">
+ <div className="flex items-center gap-2.5">
+ {isSimulating && (
+ <span className="relative flex h-2.5 w-2.5">
+ <span className="animate-ping absolute inline-flex h-full w-full -full bg-cyan-400 opacity-75"/>
+ <span className="relative inline-flex -full h-2.5 w-2.5 bg-cyan-400"/>
+ </span>
+ )}
+ {isListening && (
+ <span className="relative flex h-2.5 w-2.5">
+ <span className="animate-ping absolute inline-flex h-full w-full -full bg-red-400 opacity-75"/>
+ <span className="relative inline-flex -full h-2.5 w-2.5 bg-red-400"/>
+ </span>
+ )}
+ <h3 className="text-base font-semibold text-white tracking-tight">
+ {isListening ?"Listening...": isSimulating ?"Live Transcript":"Voice Transcript"}
+ </h3>
+ </div>
 
-          {loading && (
-            <div className="min-h-[300px] rounded-[6px] flex flex-col items-center justify-center bg-surface border border-hairline space-y-3">
-              <Loader2 className="w-10 h-10 animate-spin text-emerald-500" />
-              <p className="text-[14px] font-medium text-emerald-400 animate-pulse">Running Lexical Analysis...</p>
-              <p className="text-[12px] text-ink-muted">Scanning for social engineering patterns</p>
-            </div>
-          )}
+ {/* Dictate & View Switches */}
+ <div data-animate="control"className="flex items-center gap-2">
+ <button
+ onClick={toggleMic}
+ disabled={isSimulating}
+ title={isListening ?"Stop dictation":"Speak to transcribe"}
+ className={cn(
+"flex items-center gap-1.5 px-3 py-1.5 -xl text-xs font-semibold transition-all cursor-pointer",
+"disabled:opacity-30 disabled:cursor-not-allowed",
+ isListening
+ ?"bg-red-500/25 text-red-300 animate-pulse _0_12px_rgba(239,68,68,0.3)]"
+ :"bg-[#1C1C1E] text-white hover:bg-[#1C1C1E] hover:text-white"
+ )}
+ >
+ {isListening ? (
+ <><MicOff className="w-3.5 h-3.5"/> Stop</>
+ ) : (
+ <><Mic className="w-3.5 h-3.5"/> Dictate</>
+ )}
+ </button>
 
-          {result && (
-            <div className="space-y-4 animate-in slide-in-from-bottom-4 duration-500">
-              {/* Risk verdict */}
-              <Card className={cn(
-                "border bg-surface",
-                result.risk_level === RiskLevel.LOW && "border-emerald-500/30",
-                result.risk_level === RiskLevel.MEDIUM && "border-amber-500/30",
-                result.risk_level === RiskLevel.HIGH && "border-orange-500/30",
-                result.risk_level === RiskLevel.CRITICAL && "border-red-500/30"
-              )}>
-                <CardHeader className="pb-2 border-b border-hairline mb-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="text-[16px] text-white">NLP Analysis Result</CardTitle>
-                      <p className="text-[12px] text-ink-muted mt-1">
-                        Confidence score: <span className="text-white font-semibold">{Math.round(result.score * 100)}</span> / 100
-                      </p>
-                    </div>
-                    <Badge
-                      className={cn("px-3 py-1 text-[12px] rounded-[4px]",
-                        result.risk_level === RiskLevel.LOW ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" :
-                        result.risk_level === RiskLevel.CRITICAL ? "bg-red-500/20 text-red-500 border border-red-500/30" : 
-                        result.risk_level === RiskLevel.HIGH ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
-                      )}
-                    >
-                      {result.risk_level} RISK
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {result.risk_level === RiskLevel.LOW ? (
-                    <div className="flex items-center gap-3 bg-emerald-900/10 border border-emerald-500/20 p-4 rounded-[6px]">
-                      <TileIcon icon={BadgeCheck} className="flex-shrink-0 bg-white" iconClassName="w-5 h-5 text-emerald-400" />
-                      <p className="text-[14px] text-emerald-100">No coercive or suspicious social engineering patterns detected.</p>
-                    </div>
-                  ) : (
-                    <div className="flex items-start gap-3 bg-red-900/10 border border-red-500/20 p-4 rounded-[6px]">
-                      <TileIcon icon={OctagonAlert} className="flex-shrink-0 mt-0.5 bg-white" iconClassName="w-5 h-5 text-red-500" />
-                      <div>
-                        <p className="text-[14px] font-semibold mb-1 text-red-400">Suspicious Patterns Detected</p>
-                        <p className="text-[12px] text-red-200/70">
-                          These indicators would significantly penalize the risk score in a live payment transaction.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+ <div className="flex bg-[#1C1C1E] -xl p-1">
+ <button
+ onClick={() => setViewMode("chat")}
+ className={cn(
+"px-2.5 py-1 text-[11px] font-medium -lg transition-all cursor-pointer",
+ viewMode ==="chat"
+ ?"bg-blue-600/30 text-white"
+ :"text-white hover:text-white"
+ )}
+ >
+ Chat View
+ </button>
+ <button
+ onClick={() => setViewMode("raw")}
+ className={cn(
+"px-2.5 py-1 text-[11px] font-medium -lg transition-all cursor-pointer",
+ viewMode ==="raw"
+ ?"bg-blue-600/30 text-white"
+ :"text-white hover:text-white"
+ )}
+ >
+ Raw Edit
+ </button>
+ </div>
+ </div>
+ </div>
 
-              {/* Triggered indicators */}
-              {result.triggered_indicators.length > 0 && (
-                <Card className="bg-surface">
-                  <CardHeader className="pb-3 border-b border-hairline mb-4">
-                    <CardTitle className="text-[14px] text-white">
-                      Triggered Indicators
-                      <span className="ml-2 text-[12px] font-normal text-ink-muted">
-                        {result.triggered_indicators.length} detected
-                      </span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {result.triggered_indicators.map((ind, idx) => (
-                      <div key={idx} className="border-b border-hairline pb-4 last:border-0 last:pb-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="font-semibold text-[14px] text-white">
-                            {ind.category.replace(/_/g, " ")}
-                          </span>
-                          <Badge variant="outline" className="text-[10px] h-5 border-hairline text-slate-400 bg-transparent rounded-[4px]">
-                            {ind.code}
-                          </Badge>
-                        </div>
-                        <p className="text-[12px] text-ink-muted">{ind.explanation}</p>
-                        <div className="mt-2 bg-[#1f1f1f] border border-hairline p-2.5 rounded-[4px] text-[12px] font-mono text-ink-muted">
-                          &ldquo;...
-                          <span className="bg-red-500/20 text-red-400 font-bold px-1 rounded-[2px] border border-red-500/20">
-                            {ind.matched_phrase}
-                          </span>
-                          ...&rdquo;
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+ {/* Transcript Display Area */}
+ <div className="relative">
+ {viewMode ==="raw"|| isListening ? (
+ <textarea
+ ref={textareaRef}
+ className={cn(
+"w-full h-64 -2xl bg-[#1C1C1E] p-4 pr-16 text-[13px] text-white focus:outline-none resize-none placeholder:text-white transition-colors font-mono leading-relaxed",
+ isListening
+ ?"ring-2 ring-red-400/20"
+ : isSimulating
+ ?"ring-2 ring-cyan-400/20"
+ :"focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+ )}
+ placeholder={
+ isListening
+ ?"Speak now — your words will appear here in real-time..."
+ :"Select a scenario, click Dictate to speak, or type/paste a transcript here..."
+ }
+ value={transcript}
+ onChange={(e) => {
+ if (!isSimulating && !isListening && !hashedOutput && !isEncrypting) {
+ setTranscript(e.target.value);
+ }
+ }}
+ readOnly={isSimulating || !!hashedOutput || isEncrypting}
+ />
+ ) : (
+ <div
+ ref={chatContainerRef}
+ className={cn(
+"w-full h-64 overflow-y-auto -2xl bg-[#1C1C1E] p-4 text-[13px] text-white transition-colors space-y-3 no-scrollbar",
+ isSimulating ?"_0_20px_rgba(6,182,212,0.15)]":""
+ )}
+ >
+ {!transcript.trim() && (
+ <div className="text-white h-full flex flex-col items-center justify-center text-xs text-center px-4 space-y-1.5">
+ <MessageSquareWarning className="w-6 h-6 text-white"/>
+ <span>No transcript yet. Select a scenario or switch to Raw Edit to paste.</span>
+ </div>
+ )}
+
+ {transcript.split("\n").map((line, idx) => {
+ if (!line.trim()) return null;
+ const isCaller = line.startsWith("Caller:");
+ const isVictim = line.startsWith("Victim:");
+ const content = line.replace(/^(Caller:|Victim:)\s*/i,"");
+
+ if (!isCaller && !isVictim) {
+ return (
+ <div key={idx} className="text-xs text-white bg-[#1C1C1E] p-2.5 -xl font-mono">
+ {line}
+ </div>
+ );
+ }
+
+ return (
+ <div key={idx} className={cn("flex w-full", isVictim ?"justify-end":"justify-start")}>
+ <div
+ className={cn(
+"max-w-[85%] -2xl px-4 py-2.5 text-xs space-y-0.5",
+ isVictim
+ ?"bg-cyan-950/70 text-white"
+ :"bg-[#1C1C1E] text-white"
+ )}
+ >
+ <div
+ className={cn(
+"text-[10px] font-mono font-bold uppercase tracking-wider",
+ isVictim ?"text-white":"text-white"
+ )}
+ >
+ {isVictim ?"Victim":"Caller"}
+ </div>
+ <p className="leading-relaxed">{content}</p>
+ </div>
+ </div>
+ );
+ })}
+ </div>
+ )}
+
+ {/* Status Badges Overlay */}
+ {isSimulating && (
+ <span className="absolute bottom-3 right-3 text-[10px] text-white font-mono font-bold tracking-widest animate-pulse bg-cyan-950/90 px-2.5 py-1 -full">
+ ● REC
+ </span>
+ )}
+ {isListening && (
+ <span className="absolute bottom-3 right-3 text-[10px] text-red-300 font-mono font-bold tracking-widest animate-pulse bg-red-950/90 px-2.5 py-1 -full">
+ ● MIC
+ </span>
+ )}
+ </div>
+
+ {/* Privacy note */}
+ <p className="text-[11.5px] text-white font-mono leading-relaxed">
+ Processed securely via server-side NLP Risk Engine. Audio data is discarded immediately after analysis.
+ </p>
+
+ {/* Action Buttons */}
+ <div className="flex gap-2.5 pt-1">
+ <Button
+ data-animate="control"
+ onClick={handleAnalyze}
+ disabled={loading || !transcript.trim() || isSimulating || isListening}
+ className="flex-1 h-11 bg-blue-600 hover:bg-blue-500 text-white font-medium -xl _0_20px_rgba(59,130,246,0.25)]"
+ >
+ {loading ? (
+ <><Loader2 className="w-4 h-4 animate-spin mr-2"/> Analyzing Transcript...</>
+ ) : (
+ <><FileText className="w-4 h-4 mr-2"/> Analyze Transcript</>
+ )}
+ </Button>
+
+ {transcript && !isSimulating && !isListening && !isEncrypting && (
+ <Button
+ data-animate="control"
+ variant="outline"
+ onClick={() => {
+ setTranscript("");
+ setResult(null);
+ setError(null);
+ setHashedOutput(null);
+ }}
+ className="h-11 px-4 -xl hover:bg-[#1C1C1E]"
+ title="Clear transcript"
+ >
+ Clear
+ </Button>
+ )}
+ </div>
+ </div>
+
+ {/* Sentiment Chart */}
+ <div data-animate="chart">
+ <RealTimeSentimentChart
+ isSimulating={isSimulating}
+ callDuration={callDuration}
+ expectedRiskLevel={activeScenario ? activeScenario.expectedRisk :"LOW"}
+ />
+ </div>
+
+ {/* Quick text demo shortcuts */}
+ <div data-animate="card"className="-[22px] bg-[#1C1C1E] p-4 sm:p-5 space-y-2.5">
+ <h4 className="text-xs text-white font-mono font-semibold uppercase tracking-wider flex items-center gap-1.5">
+ <Zap className="w-3.5 h-3.5 text-white"/> Or load a text-only scenario instantly
+ </h4>
+ <div className="space-y-2">
+ <button
+ className="w-full text-left px-3.5 py-2.5 -xl bg-[#1C1C1E] hover:bg-[#1C1C1E] text-white text-xs transition-all cursor-pointer"
+ onClick={() => {
+ if (!isSimulating && !isEncrypting) {
+ setTranscript("Victim: Hi, just confirming I transferred the rent. Please check your account.");
+ setResult(null);
+ setHashedOutput(null);
+ }
+ }}
+ >
+ 💬 Casual legitimate message
+ </button>
+ <button
+ className="w-full text-left px-3.5 py-2.5 -xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 text-xs transition-all cursor-pointer"
+ onClick={() => {
+ if (!isSimulating && !isEncrypting) {
+ setTranscript("Caller: Your bank account access will be blocked in 30 minutes. Call immediately to verify your identity and avoid suspension.");
+ setResult(null);
+ setHashedOutput(null);
+ }
+ }}
+ >
+ ⚠️ Urgency-based phishing attempt
+ </button>
+ <button
+ className="w-full text-left px-3.5 py-2.5 -xl bg-red-500/10 hover:bg-red-500/20 text-red-300 text-xs transition-all cursor-pointer"
+ onClick={() => {
+ if (!isSimulating && !isEncrypting) {
+ setTranscript("Caller: Your account is frozen by CBI. Transfer all funds NOW to avoid criminal charges.\nVictim: But I didn't do anything!\nCaller: Share OTP immediately or face arrest.");
+ setResult(null);
+ setHashedOutput(null);
+ }
+ }}
+ >
+ 🚨 Full critical attack pattern
+ </button>
+ </div>
+ </div>
+
+ {/* Secured Transcript Tile */}
+ {(isEncrypting || hashedOutput) && (
+ <div data-animate="card"className="-[22px] bg-cyan-950/30 p-5 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+ <div className="flex items-center justify-between pb-2 border-b">
+ <div className="flex items-center gap-2 text-sm font-semibold text-white">
+ <Lock className="w-4 h-4"/>
+ <span>Secured Transcript</span>
+ {isEncrypting && <Loader2 className="w-3.5 h-3.5 animate-spin ml-1 text-white"/>}
+ </div>
+ {!isEncrypting && hashedOutput && (
+ <span className="text-[10px] font-mono bg-cyan-500/20 text-white px-2.5 py-0.5 -full font-bold">
+ ✓ Secured
+ </span>
+ )}
+ </div>
+ <pre className={cn(
+"w-full -xl bg-black/50 p-4 text-[11px] font-mono leading-relaxed break-all whitespace-pre-wrap transition-colors",
+ isEncrypting ?"text-white animate-pulse":"text-white"
+ )}>
+ {hashedOutput}
+ </pre>
+ <p className="text-[11px] text-white flex items-center gap-1.5 font-mono">
+ <ShieldCheck className="w-3.5 h-3.5 text-white shrink-0"/>
+ Raw transcript processed locally. Only the cryptographic hash is recorded.
+ </p>
+ </div>
+ )}
+ </div>
+
+ {/* ── Right Column: Analysis Overview Panel ─────────────────────────── */}
+ <div className="space-y-5">
+ <div data-animate="panel"className="-[22px] bg-[#1C1C1E] _20px_50px_rgba(0,0,0,0.35)] p-5 sm:p-6 space-y-5">
+ 
+ {/* Header */}
+ <div className="flex items-center justify-between pb-3 border-b">
+ <h3 className="text-base font-semibold text-white flex items-center gap-2">
+ <Sparkles className="w-4 h-4 text-white"/>
+ Analysis Overview
+ </h3>
+ {result && (
+ <Badge
+ variant={
+ result.risk_level === RiskLevel.LOW ?"low":
+ result.risk_level === RiskLevel.MEDIUM ?"medium":
+ result.risk_level === RiskLevel.HIGH ?"high":"critical"
+ }
+ >
+ {result.risk_level} RISK
+ </Badge>
+ )}
+ </div>
+
+ {/* Risk Score Gauge & Dimensions Matrix */}
+ <div data-animate="chart"className="grid grid-cols-1 sm:grid-cols-[180px_1fr] gap-6 items-center p-4 -2xl bg-[#1C1C1E]">
+ {/* Circular Gauge */}
+ <div className="flex flex-col items-center justify-center">
+ <CircularAnalysisGauge
+ score={result ? Math.round(result.score * 100) : 0}
+ isAnalyzed={!!result}
+ />
+ <span className="text-xs text-white font-medium mt-2">Risk Score</span>
+ </div>
+
+ {/* Risk Dimensions List */}
+ <div className="space-y-2 text-xs">
+ {/* 1. Social Engineering */}
+ <div className="flex items-center justify-between py-1.5 border-b">
+ <span className="text-white">Social Engineering</span>
+ <span className={cn("font-mono font-bold", riskDimensions.socialEngineering !== null ?"text-white":"text-white")}>
+ {riskDimensions.socialEngineering !== null ?`${riskDimensions.socialEngineering} / 100`:"-- / 100"}
+ </span>
+ </div>
+
+ {/* 2. Linguistic Risk */}
+ <div className="flex items-center justify-between py-1.5 border-b">
+ <span className="text-white">Linguistic Risk</span>
+ <span className={cn("font-mono font-bold", riskDimensions.linguisticRisk !== null ?"text-white":"text-white")}>
+ {riskDimensions.linguisticRisk !== null ?`${riskDimensions.linguisticRisk} / 100`:"-- / 100"}
+ </span>
+ </div>
+
+ {/* 3. Emotional Pressure */}
+ <div className="flex items-center justify-between py-1.5 border-b">
+ <span className="text-white">Emotional Pressure</span>
+ <span className={cn("font-mono font-bold", riskDimensions.emotionalPressure !== null ?"text-white":"text-white")}>
+ {riskDimensions.emotionalPressure !== null ?`${riskDimensions.emotionalPressure} / 100`:"-- / 100"}
+ </span>
+ </div>
+
+ {/* 4. Deception Probability */}
+ <div className="flex items-center justify-between py-1.5 border-b">
+ <span className="text-white">Deception Probability</span>
+ <span className={cn("font-mono font-bold", riskDimensions.deceptionProbability !== null ?"text-white":"text-white")}>
+ {riskDimensions.deceptionProbability !== null ?`${riskDimensions.deceptionProbability} / 100`:"-- / 100"}
+ </span>
+ </div>
+
+ {/* 5. Overall Risk (Prominent Treatment) */}
+ <div className={cn(
+"flex items-center justify-between py-2 px-2.5 -xl mt-2 font-semibold transition-colors",
+ result?.risk_level === RiskLevel.CRITICAL || result?.risk_level === RiskLevel.HIGH
+ ?"bg-red-500/15 text-red-300 _0_12px_rgba(239,68,68,0.2)]"
+ : result?.risk_level === RiskLevel.MEDIUM
+ ?"bg-amber-500/15 text-amber-300"
+ : result?.risk_level === RiskLevel.LOW
+ ?"bg-emerald-500/15 text-emerald-300"
+ :"bg-[#1C1C1E] text-white"
+ )}>
+ <span>Overall Risk</span>
+ <span className="font-mono font-bold text-[13px]">
+ {riskDimensions.overallRisk !== null ?`${riskDimensions.overallRisk} / 100`:"-- / 100"}
+ </span>
+ </div>
+ </div>
+ </div>
+
+ {/* Results Details / Loading / Empty State */}
+ {isSimulating && !result && (
+ <div className="min-h-[180px] bg-cyan-950/20 -2xl flex flex-col items-center justify-center p-6 text-center space-y-2">
+ <div className="w-10 h-10 -xl bg-cyan-500/20 flex items-center justify-center">
+ <Radio className="w-5 h-5 text-white animate-pulse"/>
+ </div>
+ <p className="text-sm font-semibold text-white">Transcribing in real-time...</p>
+ <p className="text-xs text-white max-w-xs leading-relaxed">
+ The NLP analysis will run once the call finishes, or you can click &quot;Analyze Transcript&quot; at any point.
+ </p>
+ </div>
+ )}
+
+ {error && !isSimulating && (
+ <div className="bg-red-500/10 p-5 -2xl space-y-1">
+ <h4 className="font-semibold text-red-300 text-sm flex items-center gap-2">
+ <AlertTriangle className="w-4 h-4 text-red-400"/>
+ Analysis Failed
+ </h4>
+ <p className="text-xs text-red-400">{error}</p>
+ </div>
+ )}
+
+ {!result && !loading && !error && !isSimulating && (
+ <div className="min-h-[220px] border-dashed bg-[#1C1C1E] -2xl flex flex-col items-center justify-center p-6 text-center space-y-2">
+ <div className="w-11 h-11 -2xl bg-[#1C1C1E] flex items-center justify-center">
+ <MessageSquareWarning className="w-5 h-5 text-white"/>
+ </div>
+ <h4 className="text-sm font-semibold text-white">Awaiting Transcript</h4>
+ <p className="text-xs text-white max-w-xs leading-relaxed">
+ Select a scenario above to simulate a live fraud call, or type/paste in the box and click Analyze.
+ </p>
+ </div>
+ )}
+
+ {loading && (
+ <div className="min-h-[220px] -2xl flex flex-col items-center justify-center bg-[#1C1C1E] space-y-3">
+ <Loader2 className="w-9 h-9 animate-spin text-white"/>
+ <p className="text-sm font-semibold text-white animate-pulse">Running Lexical Analysis...</p>
+ <p className="text-xs text-white font-mono">Scanning for social engineering &amp; urgency patterns</p>
+ </div>
+ )}
+
+ {result && (
+ <div className="space-y-4 animate-in slide-in-from-bottom-3 duration-500">
+ {/* Risk Verdict Banner */}
+ <div className={cn(
+"p-4 -2xl space-y-2",
+ result.risk_level === RiskLevel.LOW &&"bg-emerald-500/10",
+ result.risk_level === RiskLevel.MEDIUM &&"bg-amber-500/10",
+ result.risk_level === RiskLevel.HIGH &&"bg-orange-500/10",
+ result.risk_level === RiskLevel.CRITICAL &&"bg-red-500/15 _0_20px_rgba(239,68,68,0.15)]"
+ )}>
+ <div className="flex items-start gap-3">
+ {result.risk_level === RiskLevel.LOW ? (
+ <BadgeCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"/>
+ ) : (
+ <OctagonAlert className="w-5 h-5 text-red-400 shrink-0 mt-0.5"/>
+ )}
+ <div>
+ <h4 className={cn(
+"text-sm font-semibold",
+ result.risk_level === RiskLevel.LOW ?"text-emerald-300":"text-red-300"
+ )}>
+ {result.risk_level === RiskLevel.LOW ?"Benign Interaction Pattern":"Suspicious Coercive Pattern Detected"}
+ </h4>
+ <p className={cn(
+"text-xs leading-relaxed mt-1",
+ result.risk_level === RiskLevel.LOW ?"text-emerald-200/80":"text-red-200/80"
+ )}>
+ {result.explanation || (
+ result.risk_level === RiskLevel.LOW
+ ?"No coercive or suspicious social engineering patterns detected."
+ :"Urgency, impersonation, or OTP request patterns identified. Would trigger high-risk friction."
+ )}
+ </p>
+ </div>
+ </div>
+ </div>
+
+ {/* Triggered Indicators Section */}
+ {result.triggered_indicators.length > 0 && (
+ <div className="space-y-3 pt-2">
+ <div className="flex items-center justify-between">
+ <h4 className="text-xs font-semibold text-white tracking-wide uppercase font-mono">
+ Triggered Indicators
+ </h4>
+ <span className="text-[11px] font-mono text-white">
+ {result.triggered_indicators.length} detected
+ </span>
+ </div>
+
+ <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1 no-scrollbar">
+ {result.triggered_indicators.map((ind, idx) => (
+ <div
+ key={idx}
+ className="p-3.5 -xl bg-black/30 space-y-2"
+ >
+ <div className="flex items-center justify-between gap-2 flex-wrap">
+ <span className="font-semibold text-xs text-white capitalize">
+ {ind.category.replace(/_/g,"")}
+ </span>
+ <Badge variant="outline"className="text-[10px] h-5 font-mono">
+ {ind.code}
+ </Badge>
+ </div>
+ <p className="text-xs text-white leading-snug">
+ {ind.explanation}
+ </p>
+ {ind.matched_phrase && (
+ <div className="bg-black/50 p-2 -lg text-xs font-mono text-white">
+ &ldquo;...
+ <span className="bg-red-500/20 text-red-400 font-bold px-1.5 py-0.5">
+ {ind.matched_phrase}
+ </span>
+ ...&rdquo;
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
+ )}
+
+ </div>
+ </div>
+
+ </div>
+
+ </div>
+ );
 }
