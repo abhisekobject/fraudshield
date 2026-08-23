@@ -108,7 +108,7 @@ export default function Dashboard() {
  href="http://localhost:8000/api/docs" 
  target="_blank" 
  rel="noopener noreferrer"
- className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white text-sm font-medium transition-all flex items-center gap-2"
+ className="px-6 py-2.5 rounded-xl bg-white border border-white hover:bg-gray-100 hover:border-gray-100 text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] text-sm font-bold transition-all flex items-center gap-2"
  >
  <Terminal className="w-4 h-4" />
  Swagger Docs
@@ -117,7 +117,7 @@ export default function Dashboard() {
  href="http://localhost:8000/api/redoc" 
  target="_blank" 
  rel="noopener noreferrer"
- className="px-6 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white text-sm font-medium transition-all flex items-center gap-2"
+ className="px-6 py-2.5 rounded-xl bg-white border border-white hover:bg-gray-100 hover:border-gray-100 text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] text-sm font-bold transition-all flex items-center gap-2"
  >
  <Terminal className="w-4 h-4" />
  ReDoc API
