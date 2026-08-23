@@ -105,9 +105,10 @@ interface PhoneSimulatorProps {
  callScenario: CallScenario | null;
  onCallReset: () => void;
  onCallResult: (result: SocialEngineeringEvaluation | null) => void;
+ onAccepted?: () => void;
 }
 
-export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCallReset, onCallResult }: PhoneSimulatorProps) {
+export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCallReset, onCallResult, onAccepted }: PhoneSimulatorProps) {
  const [screen, setScreen] = useState<Screen>("home");
  const [result, setResult] = useState<PaymentResponse | null>(null);
 
@@ -189,6 +190,7 @@ export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCa
  // ── Accept call: play TTS + sync transcript ──────────────────────────────
  const handleAcceptCall = () => {
  if (!callScenario) return;
+ onAccepted?.();
  setCallScreen("active");
  callTimerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
 

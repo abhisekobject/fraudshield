@@ -315,6 +315,8 @@ export default function MobileSimulationPage() {
  const [activeCallScenario, setActiveCallScenario] = useState<CallScenario | null>(null);
  const [lastCallResult, setLastCallResult] = useState<SocialEngineeringEvaluation | null>(null);
  const [lastCallScenarioSnapshot, setLastCallScenarioSnapshot] = useState<CallScenario | null>(null);
+ // Track which phone answered — 'smartphone' | 'keypad' | null
+ const [answeredBy, setAnsweredBy] = useState<'smartphone' | 'keypad' | null>(null);
 
  const handlePaymentResult = (result: PaymentResponse | null) => {
  setLastPaymentResult(result);
@@ -333,11 +335,13 @@ export default function MobileSimulationPage() {
 
  const handleCallReset = () => {
  setActiveCallScenario(null);
+ setAnsweredBy(null);
  };
 
  const handleScenarioClick = (scenario: MobileScenario) => {
  // Clear Call states
  setActiveCallScenario(null);
+ setAnsweredBy(null);
  setLastCallResult(null);
  setLastCallScenarioSnapshot(null);
  // Clear Payment states
@@ -354,6 +358,7 @@ export default function MobileSimulationPage() {
  // Clear Call states
  setLastCallResult(null);
  setLastCallScenarioSnapshot(null);
+ setAnsweredBy(null);
  setActiveCallScenario(scenario);
  };
 
@@ -373,29 +378,31 @@ export default function MobileSimulationPage() {
  {/* ── CENTER: Both Phones Side-by-Side ── */}
  <div data-animate="panel"className="relative z-10 flex flex-1 items-center justify-center gap-6 lg:gap-10 transform scale-[0.70] lg:scale-[0.85] origin-center shrink-0 min-w-max">
 
- {/* Smartphone */}
- <div className="flex flex-col items-center">
- <div className="mb-2 text-[10px] font-mono text-black uppercase tracking-widest opacity-0 select-none">
- placeholder
- </div>
- <PhoneSimulator
- scenario={activeScenario}
- onReset={handleReset}
- onResult={handlePaymentResult}
- callScenario={activeCallScenario}
- onCallReset={handleCallReset}
- onCallResult={handleCallResult}
- />
- </div>
+  {/* Smartphone — Payment phone + receives calls; goes idle when keypad answers */}
+  <div className="flex flex-col items-center">
+  <div className="mb-2 text-[10px] font-mono text-black uppercase tracking-widest opacity-0 select-none">
+  placeholder
+  </div>
+  <PhoneSimulator
+  scenario={activeCallScenario ? null : activeScenario}
+  onReset={handleReset}
+  onResult={handlePaymentResult}
+  callScenario={answeredBy === 'keypad' ? null : activeCallScenario}
+  onCallReset={handleCallReset}
+  onCallResult={handleCallResult}
+  onAccepted={() => setAnsweredBy('smartphone')}
+  />
+  </div>
 
- {/* Keypad Phone — Voice Phishing Demo */}
- <div className="flex items-end pb-2">
- <KeypadPhoneSimulator
- callScenario={activeCallScenario}
- onCallReset={handleCallReset}
- onCallResult={handleCallResult}
- />
- </div>
+  {/* Keypad Phone — Call phone; goes idle when smartphone answers */}
+  <div className="flex items-end pb-2">
+  <KeypadPhoneSimulator
+  callScenario={answeredBy === 'smartphone' ? null : activeCallScenario}
+  onCallReset={handleCallReset}
+  onCallResult={handleCallResult}
+  onAccepted={() => setAnsweredBy('keypad')}
+  />
+  </div>
 
  </div>
 

@@ -136,6 +136,7 @@ export interface KeypadPhoneSimulatorProps {
  callScenario: CallScenario | null;
  onCallReset: () => void;
  onCallResult: (result: SocialEngineeringEvaluation | null) => void;
+ onAccepted?: () => void;
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -143,6 +144,7 @@ export function KeypadPhoneSimulator({
  callScenario,
  onCallReset,
  onCallResult,
+ onAccepted,
 }: KeypadPhoneSimulatorProps) {
  const [state, setState] = useState<PhoneState>("idle");
  const [callDuration, setCallDuration] = useState(0);
@@ -188,6 +190,7 @@ export function KeypadPhoneSimulator({
 
  const handleAnswer = useCallback(() => {
  if (!callScenario) return;
+ onAccepted?.();
  setState("active");
  timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
 
