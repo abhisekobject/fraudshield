@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from"react";
+import { preloadVoices, speakScript, cancelSpeech } from "@/utils/speechQueue";
 import { api } from"@/services/api";
 import { SocialEngineeringEvaluation, RiskLevel } from"@/types";
 import { Button } from"@/components/ui/Button";
@@ -223,8 +224,7 @@ export default function InteractionAnalyzer() {
  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
  const textareaRef = useRef<HTMLTextAreaElement>(null);
  const chatContainerRef = useRef<HTMLDivElement>(null);
- const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
  const recognitionRef = useRef<any>(null);
 
  useEffect(() => {
@@ -247,8 +247,7 @@ export default function InteractionAnalyzer() {
  if (typeof window !=="undefined"&&"speechSynthesis"in window) {
  window.speechSynthesis.cancel();
  }
- utteranceRef.current = null;
- };
+  };
 
  const stopSimulation = () => {
  cleanup();
@@ -328,80 +327,49 @@ export default function InteractionAnalyzer() {
  setIsListening(true);
  };
 
- const simulateCall = (scenario: CallScenario) => {
- cleanup();
+  const simulateCall = (scenario: CallScenario) => {
+    cleanup();
 
- setIsSimulating(true);
- setActiveScenario(scenario);
- setTranscript("");
- setResult(null);
- setError(null);
- setCallDuration(0);
- setHashedOutput(null);
+    setIsSimulating(true);
+    setActiveScenario(scenario);
+    setTranscript("");
+    setResult(null);
+    setError(null);
+    setCallDuration(0);
+    setHashedOutput(null);
 
- callTimerRef.current = setInterval(() => {
- setCallDuration((prev) => prev + 1);
- }, 1000);
+    const scriptText = scenario.script;
+    
+    // Speak via centralized queue
+    speakScript(scriptText, scenario.rateMultiplier, scenario.pitchOffset);
 
- if (typeof window !=="undefined"&&"speechSynthesis"in window) {
- const utterance = new SpeechSynthesisUtterance(scenario.script);
- utterance.rate = 0.85 * scenario.rateMultiplier;
- utterance.pitch = 1.0 + scenario.pitchOffset;
- utterance.volume = 1.0;
+    const words = scriptText.split(" ");
+    // Start at a negative index to create an initial lag (simulates real-time transcription delay)
+    let wordIdx = -1;
+    // Match the speech rate closely to maintain a conversational, real-time feel
+    const wordIntervalMs = Math.max(200, (60000 / 220) / (0.85 * scenario.rateMultiplier));
 
- const loadVoiceAndSpeak = () => {
- const voices = window.speechSynthesis.getVoices();
- if (voices.length > 0) {
- const englishVoice =
- voices.find((v) => v.lang ==="en-IN") ||
- voices.find((v) => v.lang ==="en-GB") ||
- voices.find((v) => v.lang.startsWith("en-"));
- if (englishVoice) utterance.voice = englishVoice;
- }
+    callTimerRef.current = setInterval(() => {
+      setCallDuration((prev) => prev + 1);
+    }, 1000);
 
- utterance.onboundary = (event: SpeechSynthesisEvent) => {
- if (event.name ==="word") {
- const endIdx = event.charIndex + event.charLength;
- setTranscript(scenario.script.substring(0, endIdx));
- }
- };
-
- utterance.onend = () => {
- setTranscript(scenario.script);
- if (callTimerRef.current) clearInterval(callTimerRef.current);
- callTimerRef.current = null;
- setIsSimulating(false);
- setActiveScenario(null);
- };
-
- utterance.onerror = () => {
- if (callTimerRef.current) clearInterval(callTimerRef.current);
- setIsSimulating(false);
- setActiveScenario(null);
- };
-
- utteranceRef.current = utterance;
- window.speechSynthesis.speak(utterance);
- };
-
- if (window.speechSynthesis.getVoices().length === 0) {
- window.speechSynthesis.onvoiceschanged = loadVoiceAndSpeak;
- } else {
- loadVoiceAndSpeak();
- }
- } else {
- let idx = 0;
- const fallback = setInterval(() => {
- idx += 3;
- setTranscript(scenario.script.substring(0, idx));
- if (idx >= scenario.script.length) {
- clearInterval(fallback);
- setIsSimulating(false);
- setActiveScenario(null);
- }
- }, 30);
- }
- };
+    const simInterval = setInterval(() => {
+      wordIdx++;
+      if (wordIdx <= 0) {
+        return; // Still in the delay phase
+      }
+      
+      if (wordIdx <= words.length) {
+        setTranscript(words.slice(0, wordIdx).join(" "));
+      } else {
+        clearInterval(simInterval);
+        if (callTimerRef.current) clearInterval(callTimerRef.current);
+        callTimerRef.current = null;
+        setIsSimulating(false);
+        setActiveScenario(null);
+      }
+    }, wordIntervalMs);
+  };
 
  const handleAnalyze = async () => {
  if (!transcript.trim()) return;

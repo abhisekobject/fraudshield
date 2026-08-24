@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from"react";
+import React, { useState, useEffect, useRef, useCallback } from"react";
+import { preloadVoices, speakScript, cancelSpeech } from "@/utils/speechQueue";
 import { 
  Wifi, Battery, Signal,
  ScanLine, Users, Landmark, Wallet,
@@ -120,7 +121,12 @@ export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCa
  const [callResult, setCallResult] = useState<SocialEngineeringEvaluation | null>(null);
  const [callLoading, setCallLoading] = useState(false);
  const callTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+ const simTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+ useEffect(() => {
+ preloadVoices();
+ }, []);
 
  useRingtone(callScreen ==="ringing");
 
@@ -143,11 +149,10 @@ export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCa
  setCallResult(null);
  setCallDuration(0);
  } else {
- // Stop any speech and cleanup
- if (typeof window !=="undefined"&&"speechSynthesis"in window) {
- window.speechSynthesis.cancel();
- }
+ // Do NOT cancel speechSynthesis here — the other phone may be actively speaking.
+ // Only stop our own timers.
  if (callTimerRef.current) clearInterval(callTimerRef.current);
+ if (simTimerRef.current) clearInterval(simTimerRef.current);
  setCallScreen("idle");
  setCallTranscript("");
  setCallDuration(0);
@@ -194,57 +199,51 @@ export function PhoneSimulator({ scenario, onReset, onResult, callScenario, onCa
  setCallScreen("active");
  callTimerRef.current = setInterval(() => setCallDuration(d => d + 1), 1000);
 
- if (typeof window ==="undefined"|| !("speechSynthesis"in window)) return;
+ const scriptText = callScenario.script;
 
- const utterance = new SpeechSynthesisUtterance(callScenario.script);
- utterance.rate = 0.85 * callScenario.rateMultiplier;
- utterance.pitch = 1.0 + callScenario.pitchOffset;
- utterance.volume = 1.0;
+ // TTS via centralized speech queue (sequential, Chrome-safe)
+ speakScript(scriptText, callScenario.rateMultiplier, callScenario.pitchOffset);
 
- const speak = () => {
- const voices = window.speechSynthesis.getVoices();
- if (voices.length > 0) {
- const v = voices.find(v => v.lang ==="en-IN") || voices.find(v => v.lang.startsWith("en-"));
- if (v) utterance.voice = v;
- }
- utterance.onboundary = (event: SpeechSynthesisEvent) => {
- if (event.name ==="word") {
- const endIdx = event.charIndex + event.charLength;
- setCallTranscript(callScenario.script.substring(0, endIdx));
- }
- };
- utterance.onend = async () => {
- setCallTranscript(callScenario.script);
- if (callTimerRef.current) clearInterval(callTimerRef.current);
- // Analyse with NLP
- setCallLoading(true);
- try {
- const nlp = await api.analyzeInteraction({ transcript: callScenario.script, channel:"voice"});
- setCallResult(nlp);
- onCallResult(nlp);
- } catch (e) { console.error(e); }
- finally { setCallLoading(false); setCallScreen("call_result"); }
- };
- utterance.onerror = () => {
- if (callTimerRef.current) clearInterval(callTimerRef.current);
- setCallScreen("idle");
- };
- utteranceRef.current = utterance;
- window.speechSynthesis.speak(utterance);
- };
+    // Guaranteed UI Simulation Flow
+    const words = scriptText.split(" ");
+    // Start at a negative index to create an initial lag (simulates real-time transcription delay)
+    let currentWordIdx = -1; 
+    // Match the speech rate closely to maintain a conversational, real-time feel
+    const wordIntervalMs = Math.max(200, (60000 / 220) / (0.85 * callScenario.rateMultiplier));
 
- if (window.speechSynthesis.getVoices().length === 0) {
- window.speechSynthesis.onvoiceschanged = speak;
- } else {
- speak();
- }
+ simTimerRef.current = setInterval(() => {
+   currentWordIdx++;
+   if (currentWordIdx <= 0) {
+     return; // Still in the delay phase
+   }
+   
+   if (currentWordIdx <= words.length) {
+     setCallTranscript(words.slice(0, currentWordIdx).join(" "));
+   } else {
+     if (simTimerRef.current) clearInterval(simTimerRef.current);
+     if (callTimerRef.current) clearInterval(callTimerRef.current);
+     
+     setCallLoading(true);
+     api.analyzeInteraction({ transcript: scriptText, channel: "voice" })
+       .then((nlp) => {
+         setCallResult(nlp);
+         onCallResult(nlp);
+       })
+       .catch(console.error)
+       .finally(() => { 
+         setCallLoading(false); 
+         setCallScreen("call_result"); 
+       });
+   }
+ }, wordIntervalMs);
  };
 
  const handleDeclineCall = () => { onCallReset(); };
 
  const handleEndCall = () => {
- window.speechSynthesis.cancel();
+ cancelSpeech();
  if (callTimerRef.current) clearInterval(callTimerRef.current);
+ if (simTimerRef.current) clearInterval(simTimerRef.current);
  onCallReset();
  };
 

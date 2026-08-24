@@ -58,26 +58,18 @@ export function BottomNav() {
   href="/"
   className="flex items-center gap-2.5 shrink-0 group hover:opacity-80 transition-opacity"
   >
-  {/* Custom FraudShield Mark: Hexagonal scan-eye with circuit traces */}
-  <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl bg-black flex items-center justify-center group-hover:bg-black/80 transition-colors shrink-0">
-    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-      {/* Outer hexagon */}
-      <path d="M16 2L28 9V23L16 30L4 23V9L16 2Z" stroke="white" strokeWidth="1.5" fill="none"/>
-      {/* Inner smaller hexagon rotated */}
-      <path d="M16 7L23.5 11.5V20.5L16 25L8.5 20.5V11.5L16 7Z" stroke="white" strokeOpacity="0.4" strokeWidth="1" fill="none"/>
-      {/* Central eye iris */}
-      <circle cx="16" cy="16" r="4" stroke="white" strokeWidth="1.5" fill="none"/>
-      {/* Pupil dot */}
-      <circle cx="16" cy="16" r="1.5" fill="white"/>
-      {/* Circuit traces — cardinal connectors */}
-      <line x1="16" y1="2" x2="16" y2="7" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      <line x1="16" y1="25" x2="16" y2="30" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      <line x1="4" y1="9" x2="8.5" y2="11.5" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      <line x1="28" y1="9" x2="23.5" y2="11.5" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      <line x1="4" y1="23" x2="8.5" y2="20.5" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      <line x1="28" y1="23" x2="23.5" y2="20.5" stroke="white" strokeOpacity="0.5" strokeWidth="1"/>
-      {/* Scan line through eye */}
-      <line x1="12" y1="16" x2="20" y2="16" stroke="white" strokeOpacity="0.35" strokeWidth="0.8"/>
+  {/* Custom FraudShield Mark: Minimal and complex shield */}
+  <div className="w-9 h-9 md:w-10 md:h-10 flex items-center justify-center shrink-0">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-black">
+      {/* Abstract outer shield */}
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Internal intersecting lines for complexity */}
+      <path d="M12 2v20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.3" />
+      <path d="M4 12h16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeOpacity="0.3" />
+      {/* Diamond in the center */}
+      <path d="M12 8l4 4-4 4-4-4 4-4z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {/* Core dot */}
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
     </svg>
   </div>
   <div className="hidden xl:flex flex-col">

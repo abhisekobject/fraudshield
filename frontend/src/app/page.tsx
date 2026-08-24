@@ -103,7 +103,7 @@ export default function Dashboard() {
  </h1>
 
  {/* API Documentation Links */}
- <div data-animate="header" className="flex items-center justify-center gap-4 pt-4 mt-4 w-full border-t border-white/10">
+ <div data-animate="header" className="flex items-center justify-center gap-4 pt-4 mt-4 w-full border-t border-white/10 flex-wrap">
  <a 
  href="http://localhost:8000/api/docs" 
  target="_blank" 
@@ -121,6 +121,13 @@ export default function Dashboard() {
  >
  <Terminal className="w-4 h-4" />
  ReDoc API
+ </a>
+ <a 
+ href="/privacy" 
+ className="px-6 py-2.5 rounded-xl bg-white border border-white hover:bg-gray-100 hover:border-gray-100 text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] text-sm font-bold transition-all flex items-center gap-2"
+ >
+ <Shield className="w-4 h-4" />
+ Privacy Policy
  </a>
  </div>
 
